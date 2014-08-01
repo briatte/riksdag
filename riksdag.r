@@ -9,12 +9,12 @@ library(XML)
 
 colors = c(
   "V" = "#E41A1C", # Vänsterpartiet, red
-  "S" = "#FB8072", # Socialdemokraterna, light red
   "MP" = "#4DAF4A", # Miljöpartiet, green
+  "S" = "#F781BF", # Socialdemokraterna, pink
   "C" = "#A65628", # Centerpartiet, agrarian, brown
   "M" = "#FF7F00", # Moderaterna, orange
   "KD" = "#377EB8", # Kristdemokraterna, blue
-  "FP" = "#984EA3", # Folkpartiet, 2B85BB / turquoise
+  "FP" = "#984EA3", # Folkpartiet, purple
   "SD" = "#444444", # Sverigedemokraterna, far-right, dark grey
   "-" = "#AAAAAA" # unaffiliated (William Petzäll), light grey
 )
@@ -26,7 +26,6 @@ r = na.omit(as.numeric(gsub("\\D", "", r)))
 
 root = "http://www.riksdagen.se"
 r = max(r):min(r)
-r = sample(r, 500)
 
 get_info = function(y, x) {
   y = y[ grepl(x, y) ]
