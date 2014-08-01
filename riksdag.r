@@ -26,7 +26,7 @@ r = na.omit(as.numeric(gsub("\\D", "", r)))
 
 root = "http://www.riksdagen.se"
 r = max(r):min(r)
-r = 100# r = sample(r, 500)
+#r = sample(r, 500) # r = 100# 
 
 get_info = function(y, x) {
   y = y[ grepl(x, y) ]
@@ -63,6 +63,9 @@ for(i in r) {
           aul = xpathSApply(k, "//div[contains(@class, 'splitcol')][2]/ul/li/a/@href")
           aul = gsub("/sv/ledamoter-partier/Hitta-ledamot/Ledamoter/|/$", "", aul)
           
+          # when no links are provided
+          aut = xpathSApply(k, "//div[contains(@class, 'splitcol')][2]/ul/li", xmlValue)
+          
           vot = xpathSApply(k, "//ul[@class='statelist']/li", xmlValue)
           vot = vot[ !grepl("Behandlas", vot) ]
           
@@ -82,12 +85,23 @@ for(i in r) {
                                             committee0 = str_count(com, "Avslag"),
                                             committee1 = str_count(com, "Bifall"),
                                             stringsAsFactors = FALSE))
+          else if(length(aut))
+            cat('some aut')
+
+          cat("\n")
+          print(aul)
           
+        } else {
+
+          cat("x")
+
         }
         
+      } else {
+        
+        cat("X")
+
       }
-      
-      cat(".")
       
     }
 
@@ -102,6 +116,7 @@ data = rbind.fill(lapply(dir("data", pattern = "page\\d+.csv$", full.names = TRU
                          read.csv, stringsAsFactors = FALSE))
 
 r = unique(unlist(strsplit(data$authors, ";")))
+r = r[ grepl("\\d", r) ]
 cat("Found", nrow(data), "bills", length(r), "sponsors\n")
 
 # MPs
@@ -173,6 +188,7 @@ if(length(r)) {
 
 mps = read.csv("data/ledamoter.csv", stringsAsFactors = FALSE)
 mps$name = scrubber(mps$name)
+mps$longname = paste0(mps$name, " (", mps$party, ")")
 
 cat("Found", nrow(mps), "MPs", ifelse(nrow(mps) > n_distinct(mps$name),
                                       "(non-unique names)\n",
@@ -187,6 +203,8 @@ r$n_au = 1 + str_count(r$authors, ";")
 # print(table(r$category[ r$n_au > 1 ], r$type[ r$n_au > 1 ]))
 # print(table(r$n_au))
 # print(table(r$n_au > 1))
+
+stop('here')
 
 data = subset(r, type != "Enskild motion" & n_au > 1)
 cat("Using", nrow(data), "cosponsored bills\n")

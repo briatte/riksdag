@@ -1,4 +1,4 @@
-A scraper for Swedish private bills to build their [cosponsorship network](http://jhfowler.ucsd.edu/cosponsorship.htm). See below for a sample graph, or get the full legislation network in R by running `riksdag.r` (takes quite a few hours to complete).
+A scraper for Swedish private bills to build their [cosponsorship network](http://jhfowler.ucsd.edu/cosponsorship.htm). See below for a sample graph, or get the full legislation network in R by running `riksdag.r`. __Note:__ the scraper takes hours and might get your IP banned from the Swedish Parliament website.
 
 [![](demo.png)](demo.png)
 
@@ -7,5 +7,3 @@ The data are a random sample of 553 cosponsored bills submitted between Septembe
 The full graph is best viewed with the Kamada-Kawai algorithm to detach the nodes in each party group:
 
 [![](riksdag.png)](riksdag.png)
-
-
