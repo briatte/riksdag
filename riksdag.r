@@ -26,6 +26,7 @@ r = na.omit(as.numeric(gsub("\\D", "", r)))
 
 root = "http://www.riksdagen.se"
 r = max(r):min(r)
+r = 100# r = sample(r, 500)
 
 get_info = function(y, x) {
   y = y[ grepl(x, y) ]
@@ -172,6 +173,7 @@ if(length(r)) {
 
 mps = read.csv("data/ledamoter.csv", stringsAsFactors = FALSE)
 mps$name = scrubber(mps$name)
+
 cat("Found", nrow(mps), "MPs", ifelse(nrow(mps) > n_distinct(mps$name),
                                       "(non-unique names)\n",
                                       "(unique names)\n"))
@@ -179,15 +181,18 @@ cat("Found", nrow(mps), "MPs", ifelse(nrow(mps) > n_distinct(mps$name),
 r = data = rbind.fill(lapply(dir("data", pattern = "page\\d+.csv$", full.names = TRUE),
                              read.csv, stringsAsFactors = FALSE))
 
-print(table(substr(r$date, 1, 4)))
+# print(table(substr(r$date, 1, 4)))
 
 r$n_au = 1 + str_count(r$authors, ";")
-print(table(r$category[ r$n_au > 1 ], r$type[ r$n_au > 1 ]))
+# print(table(r$category[ r$n_au > 1 ], r$type[ r$n_au > 1 ]))
 # print(table(r$n_au))
 # print(table(r$n_au > 1))
 
 data = subset(r, type != "Enskild motion" & n_au > 1)
 cat("Using", nrow(data), "cosponsored bills\n")
+
+print(apply(data[, 8:11 ], 2, sum))
+print(table(data$committee1 != 0, data$chamber1 != 0))
 
 edges = lapply(unique(data$uid), function(i) {
   
@@ -228,7 +233,7 @@ edges = data.frame(i = gsub("(.*)_(.*)", "\\1", edges$uid),
 # network
 
 n = network(edges[, 1:2 ], directed = FALSE)
-n %n% "title" = "Riksdagen 2010-2014"
+n %n% "title" = paste("Riksdagen", paste0(range(substr(data$date, 1, 4)), collapse = "-"))
 
 rownames(mps) = mps$name
 n %v% "name" = mps[ network.vertex.names(n), "name" ]
@@ -263,11 +268,14 @@ n %n% "degree" = mean(wdeg$degree, na.rm = TRUE)
 n %v% "distance" = wdeg$distance
 n %n% "distance" = mean(wdeg$distance, na.rm = TRUE)
 
-# n %v% "clustering" = wdeg$clustering    # local
-# n %n% "clustering" = clustering_w(tnet) # global
+n %v% "clustering" = wdeg$clustering    # local
+n %n% "clustering" = clustering_w(tnet) # global
 
 party = n %v% "party"
 names(party) = network.vertex.names(n)
+
+n %v% "coalition" = ifelse(party %in% c("S", "V", "MP"), "Rödgröna",
+                           ifelse(party == "SD", NA, "Alliansen"))
 
 i = colors[ mps[ n %e% "source", "party" ] ]
 j = colors[ mps[ n %e% "target", "party" ] ]
@@ -275,10 +283,10 @@ j = colors[ mps[ n %e% "target", "party" ] ]
 party = as.vector(i)
 party[ i != j ] = "#AAAAAA"
 
-print(table(n %v% "party", exclude = NULL))
+print(table(n %v% "coalition", n %v% "party", exclude = NULL))
 
 n %v% "size" = as.numeric(cut(n %v% "degree", quantile(n %v% "degree"), include.lowest = TRUE))
-g = suppressWarnings(ggnet(n, size = 0, segment.alpha = 1/2,
+g = suppressWarnings(ggnet(n, size = 0, segment.alpha = 1/2, mode = "kamadakawai",
                            segment.color = party) +
                        geom_point(alpha = 1/3, aes(size = n %v% "size", color = n %v% "party")) +
                        geom_point(alpha = 1/2, aes(size = min(n %v% "size"), color = n %v% "party")) +

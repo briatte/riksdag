@@ -4,3 +4,4 @@ draft
 *.rda
 *.Rproj
 .Rproj*
+.Rproj.user
