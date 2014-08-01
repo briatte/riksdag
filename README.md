@@ -1,4 +1,4 @@
-A scraper for Swedish private bills to build their [cosponsorship network](http://jhfowler.ucsd.edu/cosponsorship.htm). See the picture below for a graph extract with short comments, or replicate the full legislation graph in R by running `riksdag.r` (takes quite a few hours to complete).
+A scraper for Swedish private bills to build their [cosponsorship network](http://jhfowler.ucsd.edu/cosponsorship.htm). See below for a sample graph, or get the full legislation network in R by running `riksdag.r` (takes quite a few hours to complete).
 
 [![](demo.png)](demo.png)
 
