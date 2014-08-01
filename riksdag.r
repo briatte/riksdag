@@ -328,7 +328,7 @@ g = suppressWarnings(ggnet(n, size = 0, segment.alpha = 1/2, #mode = "kamadakawa
 print(g)
 
 ggsave("riksdag.pdf", g, width = 12, height = 9)
-ggsave("riksdag.png", g, width = 12, height = 9)
+ggsave("riksdag.png", g, width = 12, height = 9, dpi = 72)
 
 save(n, g, edges, file = "riksdag.rda")
 
