@@ -1,4 +1,4 @@
-A scraper for Swedish private bills to build their [cosponsorship network](http://jhfowler.ucsd.edu/cosponsorship.htm). See below for a sample graph, or get the full legislation network in R by running `riksdag.r`. __Note:__ the scraper takes hours and might get your IP banned from the Swedish Parliament website. It is probably better to use the Riksdag's [open data](http://data.riksdagen.se/) portal.
+A scraper for Swedish private bills to build their [cosponsorship network](http://jhfowler.ucsd.edu/cosponsorship.htm). See below for a sample graph, or get the full legislation network in R by running `riksdag.r`. Lots of other data is available through the Riksdag's [open data](http://data.riksdagen.se/) portal.
 
 [![](demo.png)](demo.png)
 

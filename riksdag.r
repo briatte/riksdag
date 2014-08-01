@@ -72,6 +72,9 @@ for(i in r) {
           com = get_info(vot, "Utskottets förslag:  ")
           vot = get_info(vot, "Kammarens beslut: ")
           
+          if(!length(aul) & length(aut))
+            aul = aut
+
           if(length(aul))
             links = rbind(links, data.frame(uid = nfo[1],
                                             date = gsub("Inlämning: ", "", dat),
@@ -85,8 +88,6 @@ for(i in r) {
                                             committee0 = str_count(com, "Avslag"),
                                             committee1 = str_count(com, "Bifall"),
                                             stringsAsFactors = FALSE))
-          else if(length(aut))
-            cat('some aut')
 
           cat("\n")
           print(aul)
