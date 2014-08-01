@@ -290,4 +290,9 @@ g = suppressWarnings(ggnet(n, size = 0, segment.alpha = 1/2,
 
 print(g)
 
+ggsave("riksdag.pdf", g, width = 12, height = 9)
+ggsave("riksdag.png", g, width = 12, height = 9)
+
 save(n, g, edges, file = "riksdag.rda")
+
+# have a nice day
