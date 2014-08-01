@@ -26,7 +26,7 @@ r = na.omit(as.numeric(gsub("\\D", "", r)))
 
 root = "http://www.riksdagen.se"
 r = max(r):min(r)
-#r = sample(r, 500) # r = 100# 
+r = 100#sample(r, 500) # r = 100# 
 
 get_info = function(y, x) {
   y = y[ grepl(x, y) ]
@@ -89,8 +89,7 @@ for(i in r) {
                                             committee1 = str_count(com, "Bifall"),
                                             stringsAsFactors = FALSE))
 
-          cat("\n")
-          print(aul)
+          cat(".")
           
         } else {
 
@@ -205,13 +204,24 @@ r$n_au = 1 + str_count(r$authors, ";")
 # print(table(r$n_au))
 # print(table(r$n_au > 1))
 
-stop('here')
+fix = !grepl("\\d", r$authors)
+if(length(fix)) {
+  
+  rownames(mps) = mps$longname
+  
+  r$authors[ fix ] = sapply(r$authors[ fix ], function(x) {
+    y = unlist(strsplit(x, ";"))
+    paste0(mps[ y, "url" ], collapse = ";")
+  })
+
+  cat("Fixed", sum(fix), "sponsor links\n")
+
+}
 
 data = subset(r, type != "Enskild motion" & n_au > 1)
 cat("Using", nrow(data), "cosponsored bills\n")
 
 print(apply(data[, 8:11 ], 2, sum))
-print(table(data$committee1 != 0, data$chamber1 != 0))
 
 edges = lapply(unique(data$uid), function(i) {
   
@@ -302,10 +312,10 @@ j = colors[ mps[ n %e% "target", "party" ] ]
 party = as.vector(i)
 party[ i != j ] = "#AAAAAA"
 
-print(table(n %v% "coalition", n %v% "party", exclude = NULL))
+print(table(n %v% "party", exclude = NULL))
 
 n %v% "size" = as.numeric(cut(n %v% "degree", quantile(n %v% "degree"), include.lowest = TRUE))
-g = suppressWarnings(ggnet(n, size = 0, segment.alpha = 1/2, mode = "kamadakawai",
+g = suppressWarnings(ggnet(n, size = 0, segment.alpha = 1/2, #mode = "kamadakawai",
                            segment.color = party) +
                        geom_point(alpha = 1/3, aes(size = n %v% "size", color = n %v% "party")) +
                        geom_point(alpha = 1/2, aes(size = min(n %v% "size"), color = n %v% "party")) +
