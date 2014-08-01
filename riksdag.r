@@ -1,4 +1,4 @@
-dir.create("data")
+dir.create("data", showWarnings = FALSE)
 
 library(GGally)
 library(network)
@@ -15,7 +15,7 @@ colors = c(
   "M" = "#FF7F00", # Moderaterna, orange
   "KD" = "#377EB8", # Kristdemokraterna, blue
   "FP" = "#984EA3", # Folkpartiet, 2B85BB / turquoise
-  "SD" = "#444444" # Sverigedemokraterna, far-right, dark grey
+  "SD" = "#444444", # Sverigedemokraterna, far-right, dark grey
   "-" = "#AAAAAA" # unaffiliated (William Petzäll), light grey
 )
 order = names(colors)
@@ -98,13 +98,15 @@ for(i in r) {
 
 }
 
-data = rbind.fill(lapply(dir(pattern = "page\\d+.csv$"), read.csv, stringsAsFactors = FALSE))
+data = rbind.fill(lapply(dir("data", pattern = "page\\d+.csv$", full.names = TRUE),
+                         read.csv, stringsAsFactors = FALSE))
+
 r = unique(unlist(strsplit(data$authors, ";")))
 cat("Found", nrow(data), "bills", length(r), "sponsors\n")
 
 # MPs
 
-if(!file.exists("ledamoter.csv")) {
+if(!file.exists("data/ledamoter.csv")) {
   
   get_mps = function(x) {
     h = htmlParse(paste0(root, "/sv/ledamoter-partier/Hitta-ledamot/", x))
@@ -130,7 +132,7 @@ if(!file.exists("ledamoter.csv")) {
 
 } else {
   
-  mps = read.csv("ledamoter.csv", stringsAsFactors = FALSE)
+  mps = read.csv("data/ledamoter.csv", stringsAsFactors = FALSE)
   r = unique(r[ !r %in% mps$url ]) # append new sponsors
   
 }
@@ -165,17 +167,19 @@ if(length(r)) {
     
   }
   
-  write.csv(mps, "ledamoter.csv", row.names = FALSE)
+  write.csv(mps, "data/ledamoter.csv", row.names = FALSE)
 
 }
 
-mps = read.csv("ledamoter.csv", stringsAsFactors = FALSE)
+mps = read.csv("data/ledamoter.csv", stringsAsFactors = FALSE)
 mps$name = scrubber(mps$name)
 cat("Found", nrow(mps), "MPs", ifelse(nrow(mps) > n_distinct(mps$name),
                                       "(non-unique names)\n",
                                       "(unique names)\n"))
 
-r = rbind.fill(lapply(dir(pattern = "page\\d+.csv$"), read.csv, stringsAsFactors = FALSE))
+r = data = rbind.fill(lapply(dir("data", pattern = "page\\d+.csv$", full.names = TRUE),
+                             read.csv, stringsAsFactors = FALSE))
+
 print(table(substr(r$date, 1, 4)))
 
 r$n_au = 1 + str_count(r$authors, ";")

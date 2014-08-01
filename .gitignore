@@ -1,3 +1,6 @@
+data
 draft
+
+*.rda
 *.Rproj
 .Rproj*
