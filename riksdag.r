@@ -26,7 +26,7 @@ r = na.omit(as.numeric(gsub("\\D", "", r)))
 
 root = "http://www.riksdagen.se"
 r = max(r):min(r)
-r = 100#sample(r, 500) # r = 100# 
+r = sample(r, 500)
 
 get_info = function(y, x) {
   y = y[ grepl(x, y) ]
@@ -64,7 +64,7 @@ for(i in r) {
           aul = gsub("/sv/ledamoter-partier/Hitta-ledamot/Ledamoter/|/$", "", aul)
           
           # when no links are provided
-          aut = xpathSApply(k, "//div[contains(@class, 'splitcol')][2]/ul/li", xmlValue)
+          # aut = xpathSApply(k, "//div[contains(@class, 'splitcol')][2]/ul/li", xmlValue)
           
           vot = xpathSApply(k, "//ul[@class='statelist']/li", xmlValue)
           vot = vot[ !grepl("Behandlas", vot) ]
@@ -72,8 +72,8 @@ for(i in r) {
           com = get_info(vot, "Utskottets förslag:  ")
           vot = get_info(vot, "Kammarens beslut: ")
           
-          if(!length(aul) & length(aut))
-            aul = aut
+          # if(!length(aul) & length(aut))
+          #   aul = aut
 
           if(length(aul))
             links = rbind(links, data.frame(uid = nfo[1],
@@ -116,7 +116,8 @@ data = rbind.fill(lapply(dir("data", pattern = "page\\d+.csv$", full.names = TRU
                          read.csv, stringsAsFactors = FALSE))
 
 r = unique(unlist(strsplit(data$authors, ";")))
-r = r[ grepl("\\d", r) ]
+stopifnot(all(grepl("\\d+", r))) # avoid a possible bug during scrape
+
 cat("Found", nrow(data), "bills", length(r), "sponsors\n")
 
 # MPs
@@ -140,9 +141,9 @@ if(!file.exists("data/ledamoter.csv")) {
   ))
   
   cat("Scraping", length(u), "possible sponsors ")
-  r = unique(r[ !r %in% u ])
+  r = unique(c(r, u))
+  cat(length(r), "total missing sponsor(s)\n")
 
-  cat(length(r), "missing sponsors")
   mps = data.frame() # initialize
 
 } else {
@@ -159,26 +160,31 @@ if(length(r)) {
   for(i in rev(r)) {
     
     cat(sprintf("%4.0f", which(i == r)), i, "")
-    h = htmlParse(paste0(root, "/sv/ledamoter-partier/Hitta-ledamot/Ledamoter/", i))
-    
-    t = scrubber(xpathSApply(h, "//title", xmlValue))
-    name = gsub("(.*)\\((.*)\\)(.*)", "\\1", t)
-    party = gsub("(.*)\\((.*)\\)(.*)", "\\2", t)
-    
-    get_info = function(x) {
-      y = h[ grepl(x, h) ]
-      ifelse(length(y), gsub(x, "", y), NA)
+    h = try(htmlParse(paste0(root, "/sv/ledamoter-partier/Hitta-ledamot/Ledamoter/", i)))
+
+    if(!"try-error" %in% class(h)) {
+      
+      t = scrubber(xpathSApply(h, "//title", xmlValue))
+      name = gsub("(.*)\\((.*)\\)(.*)", "\\1", t)
+      party = gsub("(.*)\\((.*)\\)(.*)", "\\2", t)
+      photo = xpathSApply(h, "//img[@class='photo']/@src")
+      
+      get_info = function(x) {
+        y = h[ grepl(x, h) ]
+        ifelse(length(y), gsub(x, "", y), NA)
+      }
+      
+      h = xpathSApply(h, "//div[@class='commissioner-info']/ul[1]/li", xmlValue)
+      mps = rbind(mps, data.frame(url = i, name, party, photo,
+                                  partyname = get_info("Parti: "),
+                                  constituency = get_info("Valkrets: "),
+                                  born = as.numeric(get_info("Född år: ")),
+                                  job = get_info("Titel: "),
+                                  stringsAsFactors = FALSE))
+      
+      cat(gsub(" - riksdagen.se", "", t), "\n")
+      
     }
-    
-    h = xpathSApply(h, "//div[@class='commissioner-info']/ul[1]/li", xmlValue)
-    mps = rbind(mps, data.frame(url = i, name, party,
-                                partyname = get_info("Parti: "),
-                                constituency = get_info("Valkrets: "),
-                                born = as.numeric(get_info("Född år: ")),
-                                job = get_info("Titel: "),
-                                stringsAsFactors = FALSE))
-    
-    cat(gsub(" - riksdagen.se", "", t), "\n")
     
   }
   
@@ -187,15 +193,24 @@ if(length(r)) {
 }
 
 mps = read.csv("data/ledamoter.csv", stringsAsFactors = FALSE)
+
 mps$name = scrubber(mps$name)
 mps$longname = paste0(mps$name, " (", mps$party, ")")
 
+mps$constituency = gsub("( )?, plats |(s)? (kommun|län)|\\d", "", mps$constituency)
+mps$constituency = gsub("s norra och östra", " North+East", mps$constituency) # Skånes
+mps$constituency = gsub("s norra", " North", mps$constituency) # Västra Götaland
+mps$constituency = gsub("s östra", " East", mps$constituency)
+mps$constituency = gsub("s södra", " South", mps$constituency)
+mps$constituency = gsub("s västra", " West", mps$constituency)
+mps$constituency = paste(mps$constituency, "County")
+
 cat("Found", nrow(mps), "MPs", ifelse(nrow(mps) > n_distinct(mps$name),
                                       "(non-unique names)\n",
-                                      "(unique names)\n"))
+                                      "(unique names)"))
 
-r = data = rbind.fill(lapply(dir("data", pattern = "page\\d+.csv$", full.names = TRUE),
-                             read.csv, stringsAsFactors = FALSE))
+r = rbind.fill(lapply(dir("data", pattern = "page\\d+.csv$", full.names = TRUE),
+                      read.csv, stringsAsFactors = FALSE))
 
 # print(table(substr(r$date, 1, 4)))
 
@@ -204,22 +219,12 @@ r$n_au = 1 + str_count(r$authors, ";")
 # print(table(r$n_au))
 # print(table(r$n_au > 1))
 
-fix = !grepl("\\d", r$authors)
-if(length(fix)) {
-  
-  rownames(mps) = mps$longname
-  
-  r$authors[ fix ] = sapply(r$authors[ fix ], function(x) {
-    y = unlist(strsplit(x, ";"))
-    paste0(mps[ y, "url" ], collapse = ";")
-  })
+# name fixes
 
-  cat("Fixed", sum(fix), "sponsor links\n")
-
-}
+r$authors = gsub("Linda Arvidsson Wemmert", "Linda Wemmert", r$authors)
 
 data = subset(r, type != "Enskild motion" & n_au > 1)
-cat("Using", nrow(data), "cosponsored bills\n")
+cat("\nUsing", nrow(data), "cosponsored bills\n\n")
 
 print(apply(data[, 8:11 ], 2, sum))
 
@@ -267,9 +272,11 @@ n %n% "title" = paste("Riksdagen", paste0(range(substr(data$date, 1, 4)), collap
 rownames(mps) = mps$name
 n %v% "name" = mps[ network.vertex.names(n), "name" ]
 n %v% "party" = mps[ network.vertex.names(n), "party" ]
+n %v% "partyname" = mps[ network.vertex.names(n), "partyname" ]
 n %v% "constituency" = mps[ network.vertex.names(n), "constituency" ]
 n %v% "born" = mps[ network.vertex.names(n), "born" ]
 n %v% "url" = mps[ network.vertex.names(n), "url" ]
+n %v% "photo" = mps[ network.vertex.names(n), "photo" ]
 
 network::set.edge.attribute(n, "source", as.character(edges[, 1]))
 network::set.edge.attribute(n, "target", as.character(edges[, 2]))
@@ -315,7 +322,7 @@ party[ i != j ] = "#AAAAAA"
 print(table(n %v% "party", exclude = NULL))
 
 n %v% "size" = as.numeric(cut(n %v% "degree", quantile(n %v% "degree"), include.lowest = TRUE))
-g = suppressWarnings(ggnet(n, size = 0, segment.alpha = 1/2, #mode = "kamadakawai",
+g = suppressWarnings(ggnet(n, size = 0, segment.alpha = 1/2, # mode = "kamadakawai",
                            segment.color = party) +
                        geom_point(alpha = 1/3, aes(size = n %v% "size", color = n %v% "party")) +
                        geom_point(alpha = 1/2, aes(size = min(n %v% "size"), color = n %v% "party")) +
@@ -331,5 +338,76 @@ ggsave("riksdag.pdf", g, width = 12, height = 9)
 ggsave("riksdag.png", g, width = 12, height = 9, dpi = 72)
 
 save(n, g, edges, file = "riksdag.rda")
+
+rgb = t(col2rgb(colors[ names(colors) %in% as.character(n %v% "party") ]))
+mode = "fruchtermanreingold"
+meta = list(creator = "rgexf",
+            description = paste0(mode, " placement"),
+            keywords = "Parliament, Sweden")
+
+people = data.frame(url = n %v% "url",
+                    name = network.vertex.names(n), 
+                    party = n %v% "party",
+                    partyname = n %v% "partyname",
+                    constituency = n %v% "constituency",
+                    born = n %v% "born",
+                    job = n %v% "job",
+                    degree = n %v% "degree",
+                    distance = n %v% "distance",
+                    photo = n %v% "photo",
+                    stringsAsFactors = FALSE)
+
+node.att = c("url", "party", "partyname", "constituency", "born", "job", "degree", "distance", "photo")
+node.att = cbind(label = people$name, people[, node.att ])
+
+people = data.frame(id = as.numeric(factor(people$name)),
+                    label = people$name,
+                    stringsAsFactors = FALSE)
+
+relations = data.frame(
+  source = as.numeric(factor(n %e% "source", levels = levels(factor(people$label)))),
+  target = as.numeric(factor(n %e% "target", levels = levels(factor(people$label)))),
+  weight = n %e% "weight"
+)
+relations = na.omit(relations)
+
+nodecolors = lapply(node.att$party, function(x)
+  data.frame(r = rgb[x, 1], g = rgb[x, 2], b = rgb[x, 3], a = .3 ))
+nodecolors = as.matrix(rbind.fill(nodecolors))
+
+net = as.matrix.network.adjacency(n)
+
+# placement method (Kamada-Kawai best at separating at reasonable distances)
+position = paste0("gplot.layout.", mode)
+if(!exists(position)) stop("Unsupported placement method '", position, "'")
+
+position = do.call(position, list(net, NULL))
+position = as.matrix(cbind(position, 1))
+colnames(position) = c("x", "y", "z")
+
+# compress floats
+position[, "x"] = round(position[, "x"], 2)
+position[, "y"] = round(position[, "y"], 2)
+library(rgexf)
+write.gexf(nodes = people,
+           edges = relations[, -3],
+           edgesWeight = relations[, 3],
+           nodesAtt = data.frame(label = as.character(node.att$label),
+                                 url = node.att$url,
+                                 party = node.att$party,
+                                 partyname = node.att$partyname,
+                                 constituency = node.att$constituency,
+                                 born = node.att$born,
+                                 job = node.att$job,
+                                 degree = node.att$degree,
+                                 distance = node.att$distance,
+                                 photo = node.att$photo,
+                                 stringsAsFactors = FALSE),
+           nodesVizAtt = list(position = position,
+                              color = nodecolors,
+                              size = round(node.att$degree)),
+           # edgesVizAtt = list(size = relations[, 3]),
+           defaultedgetype = "undirected", meta = meta,
+           output = "riksdag.gexf")
 
 # have a nice day
