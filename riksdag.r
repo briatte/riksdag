@@ -6,6 +6,7 @@ library(tnet)
 library(qdap)
 library(stringr)
 library(XML)
+library(rgexf)
 
 colors = c(
   "V" = "#E41A1C", # Vänsterpartiet, red
@@ -388,7 +389,7 @@ colnames(position) = c("x", "y", "z")
 # compress floats
 position[, "x"] = round(position[, "x"], 2)
 position[, "y"] = round(position[, "y"], 2)
-library(rgexf)
+
 write.gexf(nodes = people,
            edges = relations[, -3],
            edgesWeight = relations[, 3],
