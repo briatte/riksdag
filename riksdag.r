@@ -1,3 +1,4 @@
+
 dir.create("data", showWarnings = FALSE)
 
 library(GGally)
@@ -116,33 +117,23 @@ for(i in r) {
 data = rbind.fill(lapply(dir("data", pattern = "page\\d+.csv$", full.names = TRUE),
                          read.csv, stringsAsFactors = FALSE))
 
-r = unique(unlist(strsplit(data$authors, ";")))
+r = gsub("\\D", "", unique(unlist(strsplit(data$authors, ";"))))
+
 stopifnot(all(grepl("\\d+", r))) # avoid a possible bug during scrape
 
 cat("Found", nrow(data), "bills", length(r), "sponsors\n")
 
 # MPs
 
+# stop('hi')
+
 if(!file.exists("data/ledamoter.csv")) {
   
-  get_mps = function(x) {
-    h = htmlParse(paste0(root, "/sv/ledamoter-partier/Hitta-ledamot/", x))
-    u = unique(xpathSApply(h, "//a[contains(@href, 'Ledamoter/')]/@href"))
-    u = gsub("/sv/ledamoter-partier/Hitta-ledamot/Ledamoter/|/$", "", u)
-    return(u)
-  }
+  h = htmlParse("http://data.riksdagen.se/Data/Ledamoter/Ledamoter-2010-2014/")
+  h = xpathSApply(h, "//select[@name='iid']/option/@value")
   
-  # possible sponsors
-  u = unique(c(
-    get_mps("Bokstavsordning"), # currently in office
-    get_mps("Ersattare"), # replacements
-    get_mps("Ledamoter-som-avgatt"), # resigned or died
-    get_mps("Kandiderar-i-valet-2014"), # just elected
-    get_mps("Kandiderar-inte-i-valet-2014") # others
-  ))
-  
-  cat("Scraping", length(u), "possible sponsors ")
-  r = unique(c(r, u))
+  cat("Scraping", length(h), "possible sponsors ")
+  r = unique(c(r, h[ h != "" ]))
   cat(length(r), "total missing sponsor(s)\n")
 
   mps = data.frame() # initialize
@@ -150,7 +141,9 @@ if(!file.exists("data/ledamoter.csv")) {
 } else {
   
   mps = read.csv("data/ledamoter.csv", stringsAsFactors = FALSE)
-  r = unique(r[ !r %in% mps$url ]) # append new sponsors
+  mps = subset(mps, grepl("\\d", url)) # avoid scraper bug
+  
+  r = unique(r[ !r %in% gsub("\\D", "", mps$url) ]) # append new sponsors
   
 }
 
@@ -161,29 +154,29 @@ if(length(r)) {
   for(i in rev(r)) {
     
     cat(sprintf("%4.0f", which(i == r)), i, "")
-    h = try(htmlParse(paste0(root, "/sv/ledamoter-partier/Hitta-ledamot/Ledamoter/", i)))
+    h = try(xmlParse(paste0("http://data.riksdagen.se/personlista/?iid=", i)))
 
     if(!"try-error" %in% class(h)) {
       
-      t = scrubber(xpathSApply(h, "//title", xmlValue))
-      name = gsub("(.*)\\((.*)\\)(.*)", "\\1", t)
-      party = gsub("(.*)\\((.*)\\)(.*)", "\\2", t)
-      photo = xpathSApply(h, "//img[@class='photo']/@src")
-      
-      get_info = function(x) {
-        y = h[ grepl(x, h) ]
-        ifelse(length(y), gsub(x, "", y), NA)
-      }
-      
-      h = xpathSApply(h, "//div[@class='commissioner-info']/ul[1]/li", xmlValue)
-      mps = rbind(mps, data.frame(url = i, name, party, photo,
-                                  partyname = get_info("Parti: "),
-                                  constituency = get_info("Valkrets: "),
-                                  born = as.numeric(get_info("Född år: ")),
-                                  job = get_info("Titel: "),
+      from = min(as.numeric(substr(xpathSApply(h, "//uppdrag[roll_kod='Riksdagsledamot']/from", xmlValue), 1, 4)))
+      to = max(as.numeric(substr(xpathSApply(h, "//uppdrag[roll_kod='Riksdagsledamot']/tom", xmlValue), 1, 4)))
+      job = xpathSApply(h, "//uppgift[kod='en' and typ='titlar']/uppgift", xmlValue)
+      mps = rbind(mps, data.frame(name = paste(xpathSApply(h, "//tilltalsnamn", xmlValue),
+                                               xpathSApply(h, "//efternamn", xmlValue)),
+                                  born = xpathSApply(h, "//fodd_ar", xmlValue),
+                                  sex = xpathSApply(h, "//kon", xmlValue),
+                                  party = xpathSApply(h, "//parti", xmlValue),
+                                  county = xpathSApply(h, "//valkrets", xmlValue),
+                                  status = xpathSApply(h, "//status[1]", xmlValue),
+                                  from = ifelse(is.infinite(from), NA, from),
+                                  to = ifelse(is.infinite(to), NA, to),
+                                  nyears = ifelse(is.infinite(to - from), NA, to - from),
+                                  job = ifelse(is.null(job), NA, job),
+                                  url = paste0("http://data.riksdagen.se/personlista/?iid=", i, "&utformat=html"),
+                                  photo = xpathSApply(h, "//bild_url_80", xmlValue),
                                   stringsAsFactors = FALSE))
-      
-      cat(gsub(" - riksdagen.se", "", t), "\n")
+            
+      cat(tail(mps, 1)$url, "\n")
       
     }
     
@@ -195,16 +188,28 @@ if(length(r)) {
 
 mps = read.csv("data/ledamoter.csv", stringsAsFactors = FALSE)
 
+mps$nyears[ is.infinite(mps$nyears) ] = NA
 mps$name = scrubber(mps$name)
 mps$longname = paste0(mps$name, " (", mps$party, ")")
 
-mps$constituency = gsub("( )?, plats |(s)? (kommun|län)|\\d", "", mps$constituency)
-mps$constituency = gsub("s norra och östra", " North+East", mps$constituency) # Skånes
-mps$constituency = gsub("s norra", " North", mps$constituency) # Västra Götaland
-mps$constituency = gsub("s östra", " East", mps$constituency)
-mps$constituency = gsub("s södra", " South", mps$constituency)
-mps$constituency = gsub("s västra", " West", mps$constituency)
-mps$constituency = paste(mps$constituency, "County")
+mps$county = gsub("( )?, plats |(s)? (kommun|län)|\\d", "", mps$county)
+mps$county = gsub("s norra och östra", " North+East", mps$county) # Skånes
+mps$county = gsub("s norra", " North", mps$county) # Västra Götaland
+mps$county = gsub("s östra", " East", mps$county)
+mps$county = gsub("s södra", " South", mps$county)
+mps$county = gsub("s västra", " West", mps$county)
+mps$county = paste(mps$county, "County")
+
+mps$partyname = NA
+mps$partyname[ mps$party == "V" ] = "Vänsterpartiet"
+mps$partyname[ mps$party == "MP" ] = "Miljöpartiet"
+mps$partyname[ mps$party == "S" ] = "Socialdemokraterna"
+mps$partyname[ mps$party == "C" ] = "Centerpartiet"
+mps$partyname[ mps$party == "M" ] = "Moderaterna"
+mps$partyname[ mps$party == "KD" ] = "Kristdemokraterna"
+mps$partyname[ mps$party == "FP" ] = "Folkpartiet"
+mps$partyname[ mps$party == "SD" ] = "Sverigedemokraterna"
+mps$partyname[ mps$party %in% c("", "-") ] = "Independent"
 
 cat("Found", nrow(mps), "MPs", ifelse(nrow(mps) > n_distinct(mps$name),
                                       "(non-unique names)\n",
@@ -229,11 +234,11 @@ cat("\nUsing", nrow(data), "cosponsored bills\n\n")
 
 print(apply(data[, 8:11 ], 2, sum))
 
+rownames(mps) = gsub("\\D", "", mps$url)
 edges = lapply(unique(data$uid), function(i) {
   
-  d = subset(data, uid == i)
-  d = unlist(strsplit(d$authors, ";"))
-  d = mps$name[ mps$url %in% d ]
+  d = unlist(strsplit(data$authors[ data$uid == i ], ";"))
+  d = mps[ gsub("\\D", "", d), "name" ]
   d = expand.grid(d, d)
   d = subset(d, Var1 != Var2)
   d$uid = apply(d, 1, function(x) paste0(sort(x), collapse = "_"))
@@ -274,7 +279,7 @@ rownames(mps) = mps$name
 n %v% "name" = mps[ network.vertex.names(n), "name" ]
 n %v% "party" = mps[ network.vertex.names(n), "party" ]
 n %v% "partyname" = mps[ network.vertex.names(n), "partyname" ]
-n %v% "constituency" = mps[ network.vertex.names(n), "constituency" ]
+n %v% "county" = mps[ network.vertex.names(n), "county" ]
 n %v% "born" = mps[ network.vertex.names(n), "born" ]
 n %v% "url" = mps[ network.vertex.names(n), "url" ]
 n %v% "photo" = mps[ network.vertex.names(n), "photo" ]
@@ -350,15 +355,14 @@ people = data.frame(url = n %v% "url",
                     name = network.vertex.names(n), 
                     party = n %v% "party",
                     partyname = n %v% "partyname",
-                    constituency = n %v% "constituency",
+                    county = n %v% "county",
                     born = n %v% "born",
-                    job = n %v% "job",
                     degree = n %v% "degree",
                     distance = n %v% "distance",
                     photo = n %v% "photo",
                     stringsAsFactors = FALSE)
 
-node.att = c("url", "party", "partyname", "constituency", "born", "job", "degree", "distance", "photo")
+node.att = c("url", "party", "partyname", "county", "born", "degree", "distance", "photo")
 node.att = cbind(label = people$name, people[, node.att ])
 
 people = data.frame(id = as.numeric(factor(people$name)),
@@ -394,12 +398,10 @@ write.gexf(nodes = people,
            edges = relations[, -3],
            edgesWeight = relations[, 3],
            nodesAtt = data.frame(label = as.character(node.att$label),
-                                 url = node.att$url,
-                                 party = node.att$party,
+                                 url = gsub("\\D", "", node.att$url),
                                  partyname = node.att$partyname,
-                                 constituency = node.att$constituency,
+                                 county = node.att$county,
                                  born = node.att$born,
-                                 job = node.att$job,
                                  degree = node.att$degree,
                                  distance = node.att$distance,
                                  photo = node.att$photo,

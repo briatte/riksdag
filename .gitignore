@@ -1,6 +1,7 @@
 data
 draft
 
+*.Rapp.*
 *.gexf
 *.pdf
 *.rda
