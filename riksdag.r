@@ -190,6 +190,7 @@ mps = read.csv("data/ledamoter.csv", stringsAsFactors = FALSE)
 
 mps$nyears[ is.infinite(mps$nyears) ] = NA
 mps$name = scrubber(mps$name)
+mps$sex = ifelse(mps$sex == "kvinna", "F", "M")
 
 mps$county = gsub("( )?, plats |(s)? (kommun|län)|\\d", "", mps$county)
 mps$county = gsub("s norra och östra", " North+East", mps$county) # Skånes
