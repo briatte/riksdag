@@ -4,6 +4,7 @@ draft
 *.Rapp.*
 *.gexf
 *.pdf
+*.png
 *.rda
 *.Rproj
 .Rproj*

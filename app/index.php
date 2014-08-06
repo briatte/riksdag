@@ -123,32 +123,6 @@
 </div>
 
 <script>
-function decimalAdjust(type, value, exp) {
-	// If the exp is undefined or zero...
-	if (typeof exp === 'undefined' || +exp === 0) {
-		return Math[type](value);
-	}
-	value = +value;
-	exp = +exp;
-	// If the value is not a number or the exp is not an integer...
-	if (isNaN(value) || !(typeof exp === 'number' && exp % 1 === 0)) {
-		return NaN;
-	}
-	// Shift
-	value = value.toString().split('e');
-	value = Math[type](+(value[0] + 'e' + (value[1] ? (+value[1] - exp) : -exp)));
-	// Shift back
-	value = value.toString().split('e');
-	return +(value[0] + 'e' + (value[1] ? (+value[1] + exp) : exp));
-}
-
-// Decimal round
-if (!Math.round10) {
-	Math.round10 = function(value, exp) {
-		return decimalAdjust('round', value, exp);
-	};
-}
-
 // Add a method to the graph model that returns an
 // object with every neighbors of a node inside:
 sigma.classes.graph.addMethod('neighbors', function(nodeId) {
@@ -181,13 +155,13 @@ sigma.parsers.gexf(
     });
 
     // initial attributes
-    var parties = ["Vänsterpartiet", "Miljöpartiet ", "Socialdemokraterna", "Centerpartiet", "Moderaterna", "Kristdemokraterna", "Folkpartiet", "Sverigedemokraterna"];
+    var parties = ["Vänsterpartiet", "Miljöpartiet ", "Socialdemokraterna", "Centerpartiet", "Moderaterna", "Kristdemokraterna", "Folkpartiet", "Sverigedemokraterna", "Independent"];
     var colors = new Array(parties.length);
 
     // initial nodes
     s.graph.nodes().forEach(function(n) {
-      if(parties.indexOf(n.attributes["partyname"]) != -1)
-        colors[ jQuery.inArray(n.attributes["partyname"], parties) ] = n.color;
+      if(parties.indexOf(n.attributes["party"]) != -1)
+        colors[ jQuery.inArray(n.attributes["party"], parties) ] = n.color;
       n.originalColor = n.color;
       n.originalX = n.x;
       n.originalY = n.y;
@@ -230,10 +204,10 @@ sigma.parsers.gexf(
           e.color = '#333';
       });
 
-      var profile = "<a href='http://www.riksdagen.se/sv/ledamoter-partier/Hitta-ledamot/Ledamoter/" + e.data.node.attributes['url'] + "' title='Go to profile (Riksdag, new window)' target='_blank'>";
+      var profile = "<a href='http://data.riksdagen.se/personlista/?iid=" + e.data.node.attributes['url'] + "&utformat=html' title='Go to profile (Riksdag Open Data, new window)' target='_blank'>";
 
       // distance
-      var distance = "around " + Math.round10(e.data.node.attributes['distance'], -1);
+      var distance = "around&nbsp;" + e.data.node.attributes['distance'];
       if(isNaN(e.data.node.attributes['distance']))
         var distance = "impossible to compute (too isolated)";
 
@@ -242,14 +216,14 @@ sigma.parsers.gexf(
 
       document.getElementById('caption').innerHTML = '<p style="background:' + rgba + ';">' + 
         profile + '<img height="120px" src="' + e.data.node.attributes['photo'] + '" alt="no photo available" /></a> You selected ' + profile + 
-        e.data.node.attributes['label'] + '</a> <span title="Political party affiliation(s): ' + 
-        e.data.node.attributes['partyname'] + '" style="color:' + rgba.replace('0.25)', '1)') + ';">(' + 
-        e.data.node.attributes['partyname'] + ')</span>, an MP from <a title="Go to Wikipedia entry (new window)" target="_blank" href="https://en.wikipedia.org/wiki/' + 
-        e.data.node.attributes['constituency'].replace(" East", "").replace(" West", "").replace(" North+East", "").replace(" North", "").replace(" South", "") + '">' + 
-        e.data.node.attributes['constituency'] + 
+        e.data.node.label + '</a> <span title="Political party affiliation(s): ' + 
+        e.data.node.attributes['party'] + '" style="color:' + rgba.replace('0.25)', '1)') + ';">(' + 
+        e.data.node.attributes['party'] + ')</span>, an MP from <a title="Go to Wikipedia entry (new window)" target="_blank" href="https://en.wikipedia.org/wiki/' + 
+        e.data.node.attributes['county'].replace("Göteborg County", "Göteborg").replace(" East", "").replace(" West", "").replace(" North+East", "").replace(" North", "").replace(" South", "") + '">' + 
+        e.data.node.attributes['county'] + 
         '</a> who had <span title="unweighted Freeman degree">' + s.graph.getNeighborsCount(nodeId) + 
         ' bill cosponsor(s)</span> during the legislature. The <a href="http://toreopsahl.com/tnet/weighted-networks/shortest-paths/">mean weighted distance</a>' +
-        'between this MP and all others was&nbsp;' + distance + '.</p>';
+        ' between this MP and all others was ' + distance + '.</p>';
       
       // Since the data has been modified, we need to
       // call the refresh method to make the colors
@@ -272,6 +246,10 @@ sigma.parsers.gexf(
       s.refresh();
       
       document.getElementById('caption').innerHTML = '<?php echo $caption; ?>';
+      
+      // pass network dimensions and caption (again)
+      document.getElementById('caption').innerHTML = document.getElementById('caption').innerHTML.replace('/nodes', s.graph.nodes().length).replace('/edges', s.graph.edges().length).replace('/colortext', t);
+      
     });
     
     s.settings({
