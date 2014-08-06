@@ -189,6 +189,7 @@ if(length(r)) {
 mps = read.csv("data/ledamoter.csv", stringsAsFactors = FALSE)
 
 mps$nyears[ is.infinite(mps$nyears) ] = NA
+mps$nyears = mps$nyears + 1
 mps$name = scrubber(mps$name)
 mps$sex = ifelse(mps$sex == "kvinna", "F", "M")
 
