@@ -1,19 +1,41 @@
 <?php
-  
-  // initial caption
-  $caption = '<p>This graph shows Swedish Members of Parliament (MPs) during years 2011-2014. ' .
-    'A link between two MPs indicates that they have cosponsored at least one bill.</p>' .
-    '<div id="details"><h3><i class="fa fa-cube"></i> Details</h3>' .
-    '<p>The graph contains /nodes MPs connected by /edges undirected edges' .
-    ' and sized proportionally to their <a href="http://toreopsahl.com/tnet/weighted-networks/node-centrality/">weighted degree</a> in the network.</p>' .
-    '<p>The graph is based on 1,356 cosponsored bills out of a total of 9,769 found between September 2011 and June 2014.' .
-    '<p>Group colors&nbsp;&nbsp; /colortext</p></div>';
 
+  if(count($_GET) > 0) {
+    if(!empty($_GET['t'])) $t = basename($_GET['t']);
+  }
+
+  if(!isset($t)) $t = "2010-2014";
+  if($t == '') $t = "2010-2014";
+
+  $array = array(
+    "1990-1994" => "1990&mdash;1994",
+    "1994-1998" => "1994&mdash;1998",
+    "1998-2002" => "1998&mdash;2002",
+    "2002-2006" => "2002&mdash;2006",
+    "2006-2010" => "2006&mdash;2010",
+    "2010-2014" => "2010&mdash;2014");
+  $class = array(
+    "1990-1994" => "",
+    "1994-1998" => "",
+    "1998-2002" => "",
+    "2002-2006" => "",
+    "2006-2010" => "",
+    "2010-2014" => "");
+  $class[ $t ] = "here";
+    
+  // initial caption
+  $caption = '<p>This graph shows Swedish Members of Parliament (MPs) during years ' . $array[ $t ] .
+      '. A link between two MPs indicates that they have cosponsored at least one bill on the selected theme.</p>' .
+      '<div id="details"><h3><i class="fa fa-cube"></i> Details</h3>' .
+      '<p>The graph contains /nodes MPs connected by /edges undirected edges' .
+      ' and sized proportionally to their <a href="http://toreopsahl.com/tnet/weighted-networks/node-centrality/">weighted degree</a> in the network.</p>' .
+      '<p>Each graph is based on a couple of thousand bills, mostly from opposition MPs, plus a handful of bills cosponsored by MPs from the government majority.</p>' .
+      '<p>Group colors&nbsp;&nbsp; /colortext</p></div>';
 ?>
 <!doctype html>
 <html>
 <head>
-  <title>Cosponsorship networks in the Swedish Parliament: Riksdag, 2011–2014</title>
+  <title>Cosponsorship networks in the Swedish Parliament: Riksdag, <?php echo $t; ?></title>
   <meta charset="utf-8">
   <link href="http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600" rel="stylesheet" type="text/css" />
   <link href="/assets/styles.css" rel="stylesheet" type="text/css" />
@@ -21,8 +43,8 @@
   <style type="text/css" media="screen">
   html, body {
     font: 24px/150% "Source Sans Pro", sans-serif;
-    background: url("riksdag.png") no-repeat;
     background-color: #001;
+    background: url("riksdag.jpg") no-repeat;
     color: #fff;
     margin: 0;
     padding:0;
@@ -40,23 +62,32 @@
 
 <div id="sigma-container">
   <div id="controls" class="bg_an">
-
+    
     <h1>swedish parliament</h1>    
 
-    <h2><a href="http://www.riksdagen.se/" title="Riksdag">
-           <img src="logo_ri.png" height="25" alt="logo">
-        </a>&nbsp;Riksdag, 2011–2014</h2>
+    <h2><a href="http://www.ft.dk/" title="Folketinget">
+           <img src="logo_ri.png" height="18" alt="logo">
+        </a>&nbsp;<?php echo $array[ $t ]; ?></h2>
 
+    <p>Legislature&nbsp;&nbsp;
+      <a href="?t=1990-1994" class='<?php echo $class["1990-1994"]; ?>'><?php echo $array["1990-1994"]; ?></a>&nbsp;&nbsp;
+      <a href="?t=1994-1998" class='<?php echo $class["1994-1998"]; ?>'><?php echo $array["1994-1998"]; ?></a>&nbsp;&nbsp;
+      <a href="?t=1998-2002" class='<?php echo $class["1998-2002"]; ?>'><?php echo $array["1998-2002"]; ?></a>&nbsp;&nbsp;
+      <a href="?t=2002-2006" class='<?php echo $class["2002-2006"]; ?>'><?php echo $array["2002-2006"]; ?></a>&nbsp;&nbsp;
+      <a href="?t=2006-2010" class='<?php echo $class["2006-2010"]; ?>'><?php echo $array["2006-2010"]; ?></a>&nbsp;&nbsp;
+      <a href="?t=2010-2014" class='<?php echo $class["2010-2014"]; ?>'><?php echo $array["2010-2014"]; ?></a>
+    </p>
+    
     <!-- user search field -->
     <form action="/" method="post" class="search-nodes-form">
       <fieldset id="search-nodes-fieldset">
         <div></div>
       </fieldset>
     </form>
-    
+
     <!-- buttons and sources -->
     <footer>
-      
+
       <ul>
         <li>Click a node to show its ego network.</li>
         <li>Double click the graph to zoom in.</li>
@@ -86,11 +117,12 @@
       <p><a href="http://twitter.com/share?text=Cosponsorship%20networks%20in%20the%20@Sverigesriksdag%20-%20Swedish%20Parliament%20-%20using%20%23rstats%20and%20@sigmajs,%20by%20@phnk:&amp;url=<?php echo 'http://' . $_SERVER["SERVER_NAME"].$_SERVER["REQUEST_URI"]; ?>" class="button" title="Share this page on Twitter."><i class="fa fa-twitter"></i> Tweet</a>&nbsp;&nbsp;<a href="https://github.com/briatte/riksdag" class="button" title="Get the code and data from GitHub."><i class="fa fa-github"></i> Code</a></p>
 
       <ul>
-        <li>Data from <a href="http://www.riksdagen.se/">Riksdagen.se</a> (summer 2014)</li>
+        <li>Data from <a href="http://data.riksdagen.se/">data.riksdagen.se</a> (summer 2014)</li>
 
         <li>Background photo by <a href="https://commons.wikimedia.org/wiki/File:Riksdag.ipred_b9dn510_4451.jpg" title="Original photograph by Janwikifoto, politik.in2pic.com">Janwikifoto</a> (Wikimedia)</li>
 
-        <li><i class="fa fa-file-o"></i>&nbsp;&nbsp;<a href="riksdag.gexf" title="Download this graph (GEXF, readable with Gephi)">Download graph</a></li>
+        <li>Download&nbsp;&nbsp;<i class="fa fa-file-o"></i>&nbsp;&nbsp;<a href="<?php echo 'riksdag' . $t; ?>.gexf" title="Download this graph (GEXF, readable with Gephi)">network</a>&nbsp;&nbsp;<i class="fa fa-files-o"></i>&nbsp;&nbsp;<a href="riksdag.zip" title="Download all <?php echo $t; ?> graphs (GEXF, readable with Gephi)">full series</a><!-- &nbsp;&nbsp;<i class="fa fa-file-image-o"></i>&nbsp;&nbsp;<a href="plots.html">plots</a> --></li>
+
       </ul>
 
       <div id="menu">
@@ -109,13 +141,11 @@
           <li><a href="/marsad">Tunisia</a></li>
         </ul>
       </div>
-      
+
     </footer>
 
     <div id="graph-container"></div>
-
   </div>
-
   <div id="caption" class="bg_an">
     <?php echo $caption; ?>
   </div>
@@ -141,20 +171,20 @@ sigma.classes.graph.addMethod('getNeighborsCount', function(nodeId) {
 });
 
 sigma.parsers.gexf(
-  'riksdag.gexf',
+  document.title.replace("Riksdag", "riksdag").replace(", ", "").replace("Cosponsorship networks in the Swedish Parliament: ", "")+'.gexf',
   { // Here is the ID of the DOM element that
     // will contain the graph:
     container: 'sigma-container'
   },
   function(s) {
-        
+
     // initial edges
     s.graph.edges().forEach(function(e) {
       e.originalColor = e.color;
       e.type = 'arrow';
     });
-
-    // initial attributes
+    
+    // caption
     var parties = ["Vänsterpartiet", "Miljöpartiet ", "Socialdemokraterna", "Centerpartiet", "Moderaterna", "Kristdemokraterna", "Folkpartiet", "Sverigedemokraterna", "Independent"];
     var colors = new Array(parties.length);
 
@@ -166,7 +196,7 @@ sigma.parsers.gexf(
       n.originalX = n.x;
       n.originalY = n.y;
     });
-
+    
     // caption text
     var t = "";
     for (i = 0; i < parties.length; i++) {
@@ -178,7 +208,7 @@ sigma.parsers.gexf(
         
     // pass network dimensions and caption
     document.getElementById('caption').innerHTML = document.getElementById('caption').innerHTML.replace('/nodes', s.graph.nodes().length).replace('/edges', s.graph.edges().length).replace('/colortext', t);
-
+    
     // When a node is clicked, we check for each node
     // if it is a neighbor of the clicked one. If not,
     // we set its color as grey, and else, it takes its
@@ -207,24 +237,29 @@ sigma.parsers.gexf(
       var profile = "<a href='http://data.riksdagen.se/personlista/?iid=" + e.data.node.attributes['url'] + "&utformat=html' title='Go to profile (Riksdag Open Data, new window)' target='_blank'>";
 
       // distance
-      var distance = "around&nbsp;" + e.data.node.attributes['distance'];
+      var distance = "around " + e.data.node.attributes['distance'];
       if(isNaN(e.data.node.attributes['distance']))
         var distance = "impossible to compute (too isolated)";
 
       // transparency
       var rgba = e.data.node.color.replace('0.3)', '0.25)').replace('0.5)', '0.25)');
-
+      
+      if(typeof e.data.node.attributes['county'] == "undefined")
+        var county = "";
+      else
+        var county = ' from <a title="Go to Wikipedia entry (new window)" target="_blank" href="https://en.wikipedia.org/wiki/' + 
+          e.data.node.attributes['county'].replace("Göteborg County", "Göteborg").replace("Malmö County", "Malmö").replace(" East", "").replace(" West", "").replace(" North+East", "").replace(" North", "").replace(" South", "") + 
+          '">' + e.data.node.attributes['county'] + '</a>';
+      
       document.getElementById('caption').innerHTML = '<p style="background:' + rgba + ';">' + 
         profile + '<img height="120px" src="' + e.data.node.attributes['photo'] + '" alt="no photo available" /></a> You selected ' + profile + 
         e.data.node.label + '</a> <span title="Political party affiliation(s): ' + 
         e.data.node.attributes['party'] + '" style="color:' + rgba.replace('0.25)', '1)') + ';">(' + 
-        e.data.node.attributes['party'] + ')</span>, an MP from <a title="Go to Wikipedia entry (new window)" target="_blank" href="https://en.wikipedia.org/wiki/' + 
-        e.data.node.attributes['county'].replace("Göteborg County", "Göteborg").replace(" East", "").replace(" West", "").replace(" North+East", "").replace(" North", "").replace(" South", "") + '">' + 
-        e.data.node.attributes['county'] + 
-        '</a> who had <span title="unweighted Freeman degree">' + s.graph.getNeighborsCount(nodeId) + 
+        e.data.node.attributes['party'] + ')</span>, an MP' + county +
+        ' who had <span title="unweighted Freeman degree">' + s.graph.getNeighborsCount(nodeId) + 
         ' bill cosponsor(s)</span> during the legislature. The <a href="http://toreopsahl.com/tnet/weighted-networks/shortest-paths/">mean weighted distance</a>' +
         ' between this MP and all others was ' + distance + '.</p>';
-      
+            
       // Since the data has been modified, we need to
       // call the refresh method to make the colors
       // update effective.
@@ -234,8 +269,15 @@ sigma.parsers.gexf(
     // When the stage is clicked, we just color each
     // node and edge with its original color.
     s.bind('clickStage', function(e) {
+      
+      // caption
+      var parties = ["Enhedslisten", "Socialistisk Folkeparti", "Socialdemokratiet", "Radikale Venstre", "Kristendemokraterne", "Liberal Alliance", "Det Konservative Folkeparti", "Venstre", "Dansk Folkeparti", "Inuit Ataqatigiit", "Siumut", "Sambandsflokkurin", "Javnaðarflokkurin", "Independent"];
+      var colors = new Array(parties.length);
+      
       s.graph.nodes().forEach(function(n) {
         n.color = n.originalColor;
+        if(parties.indexOf(n.attributes["party"]) != -1)
+          colors[ jQuery.inArray(n.attributes["party"], parties) ] = n.color;
       });
 
       s.graph.edges().forEach(function(e) {
@@ -246,10 +288,10 @@ sigma.parsers.gexf(
       s.refresh();
       
       document.getElementById('caption').innerHTML = '<?php echo $caption; ?>';
-      
+
       // pass network dimensions and caption (again)
       document.getElementById('caption').innerHTML = document.getElementById('caption').innerHTML.replace('/nodes', s.graph.nodes().length).replace('/edges', s.graph.edges().length).replace('/colortext', t);
-      
+
     });
     
     s.settings({
@@ -358,7 +400,7 @@ sigma.parsers.gexf(
       }
       s.refresh();
     }); 
-        
+    
     // hide sparse ties
     //
     document.getElementById('showSparse').addEventListener('change', 
@@ -370,6 +412,7 @@ sigma.parsers.gexf(
       sum = sum / s.graph.edges().length;
       if (e.target.checked) {
         s.graph.edges().forEach(function(e) {
+          // use upper quartile marker
           if(e.weight < sum)
             e.color = 'rgba(66,66,66,0)';
         });
@@ -437,7 +480,6 @@ sigma.parsers.gexf(
     
   }
 );
-
 </script>
 
 </body>
