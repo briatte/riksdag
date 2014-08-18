@@ -341,9 +341,9 @@ for(l in rev(unique(m$legislature))) {
   
   print(table(n %v% "party", exclude = NULL))
   
-  # number of bills sponsored
+  # number of bills cosponsored
   nb = sapply(n %v% "url", function(x) {
-    nrow(subset(data, grepl(x, authors)))
+    nrow(subset(data, grepl(x, authors))) # ids are unique numbers
   })
   n %v% "n_bills" = as.vector(nb)
   
