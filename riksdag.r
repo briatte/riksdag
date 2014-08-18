@@ -179,7 +179,7 @@ for(i in unique(s$url)) {
   }
   # empty photos are 791 bytes
   if(!file.exists(photo) | file.info(photo)$size < 1000) {
-    file.remove(photo)
+    try(file.remove(photo), silent = TRUE)
     s$photo[ s$url == i ] = NA
   }
 }
