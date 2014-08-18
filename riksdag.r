@@ -180,10 +180,9 @@ for(i in unique(s$url)) {
   # empty photos are 791 bytes
   if(!file.exists(photo) | file.info(photo)$size < 1000) {
     try(file.remove(photo), silent = TRUE)
-    s$photo[ s$url == i ] = NA
+    s$photo[ s$url == i ] = 0
   }
 }
-s$photo = as.numeric(!is.na(s$photo))
 
 s$nyears = s$nyears + 1
 s$sex = ifelse(s$sex == "kvinna", "F", "M")
