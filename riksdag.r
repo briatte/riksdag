@@ -2,8 +2,11 @@
 
 dir.create("data", showWarnings = FALSE)
 dir.create("dump", showWarnings = FALSE) # delete when done (large, 1.3GB)
+dir.create("plots", showWarnings = FALSE)
+dir.create("photos", showWarnings = FALSE)
 
 library(GGally)
+library(grid)
 library(jsonlite)
 library(igraph)
 library(network)
@@ -14,6 +17,7 @@ library(stringr)
 library(tnet)
 library(XML)
 
+plot = TRUE
 gexf = TRUE
 
 colors = c(
@@ -164,6 +168,23 @@ if(length(r)) {
 
 s = read.csv("data/ledamoter.csv", stringsAsFactors = FALSE)
 
+s$url = gsub("\\D", "", s$url)
+
+# download photos
+for(i in unique(s$url)) {
+  photo = paste0("photos/", i, ".jpg")
+  if(!file.exists(photo)) {
+    try(download.file(paste0("http://data.riksdagen.se/filarkiv/bilder/ledamot/", i, "_80.jpg"),
+                      photo, mode = "wb", quiet = TRUE), silent = TRUE)
+  }
+  # empty photos are 791 bytes
+  if(!file.exists(photo) | file.info(photo)$size < 1000) {
+    file.remove(photo)
+    s$photo[ s$url == i ] = NA
+  }
+}
+s$photo = as.numeric(!is.na(s$photo))
+
 s$nyears = s$nyears + 1
 s$sex = ifelse(s$sex == "kvinna", "F", "M")
 
@@ -202,39 +223,32 @@ for(l in rev(unique(m$legislature))) {
   
   rownames(s) = gsub("\\D", "", s$url)
   
-  edges = lapply(data$authors, function(i) {
+  edges = rbind.fill(lapply(data$authors, function(i) {
     
-    d = unlist(strsplit(i, ";"))
-    d = s[ d, "uid" ]
-    d = expand.grid(d, d)
-    d = subset(d, Var1 != Var2)
-    d$uid = apply(d, 1, function(x) paste0(sort(x), collapse = "_"))
-    d = unique(d$uid)
-    if(length(d)) {
-      d = data.frame(i = gsub("(.*)_(.*)", "\\1", d),
-                     j = gsub("(.*)_(.*)", "\\2", d),
-                     w = length(d))
-      return(d)
-    } else {
+    w = unlist(strsplit(i, ";"))
+    
+    d = s[ w, "uid" ]
+    d = subset(expand.grid(d, d), Var1 != Var2)
+    d = unique(apply(d, 1, function(x) paste0(sort(x), collapse = "_")))
+
+    if(length(d))
+      return(data.frame(d, w = length(w) - 1)) # number of cosponsors
+    else
       return(data.frame())
-    }
     
-  })
-  
-  edges = rbind.fill(edges)
-  edges$uid = apply(edges, 1, function(x) paste0(sort(x[ 1:2 ]), collapse = "_"))
+  }))
   
   # raw edge counts
-  count = table(edges$uid)
+  count = table(edges$d)
   
   # Newman-Fowler weights (weighted quantity of bills cosponsored)
-  edges = aggregate(w ~ uid, function(x) sum(1 / x), data = edges)
+  edges = aggregate(w ~ d, function(x) sum(1 / x), data = edges)
   
   # raw counts
-  edges$count = as.vector(count[ edges$uid ])
+  edges$count = as.vector(count[ edges$d ])
   
-  edges = data.frame(i = gsub("(.*)_(.*)", "\\1", edges$uid),
-                     j = gsub("(.*)_(.*)", "\\2", edges$uid),
+  edges = data.frame(i = gsub("(.*)_(.*)", "\\1", edges$d),
+                     j = gsub("(.*)_(.*)", "\\2", edges$d),
                      w = edges$w, n = edges[, 3])
   
   # network
@@ -243,10 +257,12 @@ for(l in rev(unique(m$legislature))) {
   cat(network.edgecount(n), "edges,", network.size(n), "nodes\n")
 
   n %n% "title" = paste("Riksdag", paste0(range(substr(data$date, 1, 4)), collapse = " to "))
+
   n %n% "n_bills" = nrow(data)
+  n %n% "n_sponsors" = table(subset(m, legislature == l)$n_au)
   
   rownames(s) = s$uid
-  n %v% "url" = s[ network.vertex.names(n), "url" ]
+  n %v% "url" = as.character(s[ network.vertex.names(n), "url" ])
   n %v% "name" = s[ network.vertex.names(n), "name" ]
   n %v% "sex" = s[ network.vertex.names(n), "sex" ]
   n %v% "born" = s[ network.vertex.names(n), "born" ]
@@ -255,8 +271,8 @@ for(l in rev(unique(m$legislature))) {
   n %v% "nyears" = s[ network.vertex.names(n), "nyears" ]
   n %v% "county" = s[ network.vertex.names(n), "county" ]
   n %v% "photo" = s[ network.vertex.names(n), "photo" ]
-  # n %v% "coalition" = ifelse(n %v% "party" %in% c("S", "V", "MP"), "Leftwing", # Rödgröna
-  #                            ifelse(party == "SD", NA, "Rightwing")) # Alliansen
+  n %v% "coalition" = ifelse(n %v% "party" %in% c("S", "V", "MP"), "Leftwing", # Rödgröna
+                             ifelse(n %v% "party" == "SD", NA, "Rightwing"))   # Alliansen
   
   network::set.edge.attribute(n, "source", as.character(edges[, 1]))
   network::set.edge.attribute(n, "target", as.character(edges[, 2]))
@@ -323,35 +339,50 @@ for(l in rev(unique(m$legislature))) {
   party = as.vector(i)
   party[ i != j ] = "#AAAAAA"
   
-  ## print(table(n %v% "party", exclude = NULL))
+  print(table(n %v% "party", exclude = NULL))
   
-  n %v% "size" = as.numeric(cut(n %v% "degree", quantile(n %v% "degree"), include.lowest = TRUE))
-  g = suppressWarnings(ggnet(n, size = 0, segment.alpha = 1/2, # mode = "kamadakawai",
-                             segment.color = party) +
-                         geom_point(alpha = 1/3, aes(size = n %v% "size", color = n %v% "party")) +
-                         geom_point(alpha = 1/2, aes(size = min(n %v% "size"), color = n %v% "party")) +
-                         scale_size_continuous(range = c(6, 12)) +
-                         scale_color_manual("", values = colors, breaks = order) +
-                         theme(legend.key.size = unit(1, "cm"),
-                               legend.text = element_text(size = 16)) +
-                         guides(size = FALSE, color = guide_legend(override.aes = list(alpha = 1/3, size = 6))))
+  # number of bills sponsored
+  nb = sapply(n %v% "url", function(x) {
+    nrow(subset(data, grepl(x, authors)))
+  })
+  n %v% "n_bills" = as.vector(nb)
   
-  print(g)
-  
-  ggsave(paste0("riksdag", l, ".pdf"), g, width = 12, height = 9)
-  ggsave(paste0("riksdag", l, ".png"), g, width = 12, height = 9, dpi = 72)
+  if(plot) {
+    
+    n %v% "size" = as.numeric(cut(n %v% "degree", quantile(n %v% "degree"), include.lowest = TRUE))
+    g = suppressWarnings(ggnet(n, size = 0, segment.alpha = 1/2, # mode = "kamadakawai",
+                               segment.color = party) +
+                           geom_point(alpha = 1/3, aes(size = n %v% "size", color = n %v% "party")) +
+                           geom_point(alpha = 1/2, aes(size = min(n %v% "size"), color = n %v% "party")) +
+                           scale_size_continuous(range = c(6, 12)) +
+                           scale_color_manual("", values = colors, breaks = order) +
+                           theme(legend.key.size = unit(1, "cm"),
+                                 legend.text = element_text(size = 16)) +
+                           guides(size = FALSE, color = guide_legend(override.aes = list(alpha = 1/3, size = 6))))
+    
+    print(g)
+    
+    ggsave(paste0("plots/net_se", l, ".pdf"), g, width = 12, height = 9)
+    ggsave(paste0("plots/net_se", l, ".jpg"), g + theme(legend.position = "none"),
+           width = 12, height = 12, dpi = 72)
+    
+  }
   
   assign(paste0("net_se", substr(l, 1, 4)), n)
+  assign(paste0("bills_se", substr(l, 1, 4)), data)
+  assign(paste0("edges_se", substr(l, 1, 4)), edges)
   
   if(gexf) {
     
     rgb = t(col2rgb(colors[ names(colors) %in% as.character(n %v% "party") ]))
     mode = "fruchtermanreingold"
-    meta = list(creator = "rgexf", description = paste0(mode, " placement"),
-                keywords = "Parliament, Sweden")
+    meta = list(creator = "rgexf",
+                description = paste(mode, "placement", nrow(data), "bills"),
+                keywords = "parliament, sweden")
     
-    node.att = data.frame(url = as.character(gsub("\\D", "", n %v% "url")),
+    node.att = data.frame(url = n %v% "url",
                           party = n %v% "partyname",
+                          bills = n %v% "n_bills",
                           county = n %v% "county",
                           distance = round(n %v% "distance", 1),
                           photo = n %v% "photo",
@@ -364,39 +395,41 @@ for(l in rev(unique(m$legislature))) {
     relations = data.frame(
       source = as.numeric(factor(n %e% "source", levels = levels(factor(people$label)))),
       target = as.numeric(factor(n %e% "target", levels = levels(factor(people$label)))),
-      weight = n %e% "weight", count = n %e% "count")
+      weight = round(n %e% "weight", 2), count = n %e% "count")
     relations = na.omit(relations)
     
+    # check all weights are positive after rounding
+    stopifnot(all(relations$weight > 0))
+
     nodecolors = lapply(n %v% "party", function(x)
       data.frame(r = rgb[x, 1], g = rgb[x, 2], b = rgb[x, 3], a = .5))
     nodecolors = as.matrix(rbind.fill(nodecolors))
     
     # node placement
-    net = as.matrix.network.adjacency(n)
-    position = do.call(paste0("gplot.layout.", mode), list(net, NULL))
-    position = as.matrix(cbind(position, 1))
+    position = do.call(paste0("gplot.layout.", mode),
+                       list(as.matrix.network.adjacency(n), NULL))
+    position = as.matrix(cbind(round(position, 1), 1))
     colnames(position) = c("x", "y", "z")
-    
-    # compress floats
-    position[, "x"] = round(position[, "x"], 2)
-    position[, "y"] = round(position[, "y"], 2)
     
     # clean up vertex names from uid number
     people$label = gsub("\\s\\d+", "", people$label)
     
-    write.gexf(nodes = people,
-               edges = relations[, -3:-4 ],
-               edgesWeight = round(relations[, 3], 3),
-               nodesAtt = node.att,
+    # save with compressed floats
+    write.gexf(nodes = people, nodesAtt = node.att,
+               edges = relations[, 1:2 ], edgesWeight = relations[, 3],
                nodesVizAtt = list(position = position, color = nodecolors,
                                   size = round(n %v% "degree", 1)),
                # edgesVizAtt = list(size = relations[, 4]),
                defaultedgetype = "undirected", meta = meta,
-               output = paste0("riksdag", l, ".gexf"))
+               output = paste0("net_se", l, ".gexf"))
+               
   }
 
 }
 
-save(list = ls(pattern = "net_se"), file = "riksdag.rda")
+save(list = ls(pattern = "^(net|edges|bills)_se\\d{4}$"), file = "data/net_se.rda")
+
+if(gexf)
+  zip("net_se.zip", dir(pattern = "^net_se\\d{4}-\\d{4}\\.gexf$"))
 
 # have a nice day
