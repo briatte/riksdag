@@ -196,6 +196,8 @@ s$county = gsub("s västra", " West", s$county)
 s$county = paste(s$county, "County")
 s$county[ s$county == " County" ] = NA
 
+s$party[ s$party %in% c("", "-") ] = "IND"
+
 s$partyname = NA
 s$partyname[ s$party == "V" ] = "Vänsterpartiet"
 s$partyname[ s$party == "MP" ] = "Miljöpartiet"
@@ -207,7 +209,7 @@ s$partyname[ s$party == "KD" ] = "Kristdemokraterna"
 s$partyname[ s$party == "FP" ] = "Folkpartiet"
 s$partyname[ s$party == "PP" ] = "Piratpartiet"
 s$partyname[ s$party == "SD" ] = "Sverigedemokraterna"
-s$partyname[ s$party %in% c("", "-") ] = "Independent"
+s$partyname[ s$party == "IND" ] = "Independent"
 
 cat("Found", nrow(s), "MPs", ifelse(nrow(s) > n_distinct(s$name),
                                     "(non-unique names)\n",
@@ -288,7 +290,7 @@ for(l in rev(unique(m$legislature))) {
   E(nn)$weight = edges[, 3]
   
   i = s[ V(nn)$name, "party" ]
-  i[ i %in% c("-") ] = NA # unaffiliateds
+  i[ i %in% c("IND") ] = NA # unaffiliateds
   
   nn = nn - which(is.na(i))
   i = as.numeric(factor(i[ !is.na(i) ]))
