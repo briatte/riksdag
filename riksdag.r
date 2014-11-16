@@ -78,6 +78,9 @@ m$n_au = 1 + str_count(m$authors, ";")
 
 table(substr(m$doc, 1, 2)) # session years
 
+# note: a few bills from 1990-1991 are included; see URL below for details
+# http://data.riksdagen.se/sv/sa-funkar-dokument-id
+
 m$legislature = substr(m$doc, 1, 2)
 m$legislature[ m$legislature %in% c("GE", "GF", "GG", "GH") ] = "1990-1994"
 m$legislature[ m$legislature %in% c("GI", "GJ", "GK", "GL") ] = "1994-1998"
