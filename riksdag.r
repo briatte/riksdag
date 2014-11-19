@@ -1,7 +1,7 @@
 # hi Sweden
 
 dir.create("data", showWarnings = FALSE)
-dir.create("dump", showWarnings = FALSE) # delete when done (large, 1.3GB)
+dir.create("raw", showWarnings = FALSE) # delete when done (large, 1.3GB)
 dir.create("plots", showWarnings = FALSE)
 dir.create("photos", showWarnings = FALSE)
 
@@ -42,14 +42,17 @@ if(!file.exists(file)) {
 
   years = c("2010-2013", "2006-2009", "2002-2005", "1998-2001", "1990-1997")
   
-  for(i in years)
-    download.file(paste0("http://data.riksdagen.se/dataset/dokument/mot-", i, ".json.zip"),
-                  paste0("data/mot-", i, ".json.zip"), mode = "wb")
+  for(i in years) {
+    f = paste0("data/mot-", i, ".json.zip")
+    if(!file.exists(f))
+      download.file(paste0("http://data.riksdagen.se/dataset/dokument/mot-", i, ".json.zip"),
+                    f, mode = "wb")
+  }
   
   for(i in dir("data", "json.zip$", full.names = TRUE))
-    unzip(i, exdir = "dump")
+    unzip(i, exdir = "raw")
   
-  files = dir("dump", pattern = "json$", full.names = TRUE)
+  files = dir("raw", pattern = "json$", full.names = TRUE)
   
   m = data.frame()
   
