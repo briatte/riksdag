@@ -1,17 +1,19 @@
 # hi Sweden
 
 dir.create("data", showWarnings = FALSE)
-dir.create("raw", showWarnings = FALSE) # delete when done (large, 1.3GB)
+dir.create("raw", showWarnings = FALSE) # delete when done (large, 1.5GB)
 dir.create("plots", showWarnings = FALSE)
 dir.create("photos", showWarnings = FALSE)
 
 library(GGally)
+library(ggplot2)
 library(grid)
 library(jsonlite)
 library(igraph)
 library(network)
 library(sna)
 library(plyr)
+library(dplyr)
 library(rgexf)
 library(stringr)
 library(tnet)
@@ -31,7 +33,7 @@ colors = c(
   "NYD" = "#FFFF33", # Ny Demokrati, yellow
   "FP" = "#80B1D3", # Folkpartiet, light blue (light orange: #FDB462)
   "SD" = "#444444", # Sverigedemokraterna, far-right, dark grey
-  "-" = "#AAAAAA" # unaffiliated (William Petzäll), light grey
+  "IND" = "#AAAAAA" # unaffiliated (William Petzäll), light grey
 )
 order = names(colors)
 
@@ -40,7 +42,7 @@ order = names(colors)
 file = "data/motioner.csv"
 if(!file.exists(file)) {
 
-  years = c("2010-2013", "2006-2009", "2002-2005", "1998-2001", "1990-1997")
+  years = c("2010-2013", "2006-2009", "2002-2005", "1998-2001", "1990-1997", "1980-1989")
   
   for(i in years) {
     f = paste0("data/mot-", i, ".json.zip")
@@ -52,7 +54,8 @@ if(!file.exists(file)) {
   for(i in dir("data", "json.zip$", full.names = TRUE))
     unzip(i, exdir = "raw")
   
-  files = dir("raw", pattern = "json$", full.names = TRUE)
+  # limit to years 1988-2014 (excluding years before and after)
+  files = dir("raw", pattern = "^(g[c-z]|h[0-1])(.*)json$", full.names = TRUE)
   
   m = data.frame()
   
@@ -81,16 +84,16 @@ m$n_au = 1 + str_count(m$authors, ";")
 
 table(substr(m$doc, 1, 2)) # session years
 
-# note: a few bills from 1990-1991 are included; see URL below for details
-# http://data.riksdagen.se/sv/sa-funkar-dokument-id
-
+# parliamentary sessions, 1988-2014 (years before/after excluded from dataset)
+# see <http://data.riksdagen.se/sv/sa-funkar-dokument-id>
 m$legislature = substr(m$doc, 1, 2)
-m$legislature[ m$legislature %in% c("GE", "GF", "GG", "GH") ] = "1990-1994"
-m$legislature[ m$legislature %in% c("GI", "GJ", "GK", "GL") ] = "1994-1998"
-m$legislature[ m$legislature %in% c("GM", "GN", "GO", "GP") ] = "1998-2002"
-m$legislature[ m$legislature %in% c("GQ", "GR", "GS", "GT") ] = "2002-2006"
-m$legislature[ m$legislature %in% c("GU", "GV", "GW", "GX") ] = "2006-2010"
-m$legislature[ m$legislature %in% c("GY", "GZ", "H0", "H1") ] = "2010-2014"
+m$legislature[ m$legislature %in% c("GC", "GD", "GE") ] = "1988-1991" # Sept. 1988: 88/9, 89/0, 90/1
+m$legislature[ m$legislature %in% c("GF", "GG", "GH") ] = "1991-1994" # Sept. 1991: 91/2, 92/3, 93/4
+m$legislature[ m$legislature %in% c("GI", "GJ", "GK", "GL") ] = "1994-1998" # Sept. 1994: 94/5, 95/6, 96/7, 97/8
+m$legislature[ m$legislature %in% c("GM", "GN", "GO", "GP") ] = "1998-2002" # Sept. 1998: 98/9, 99/0, 00/1, 01/2
+m$legislature[ m$legislature %in% c("GQ", "GR", "GS", "GT") ] = "2002-2006" # Sept. 2002: 02/3, 03/4, 04/5, 05/6
+m$legislature[ m$legislature %in% c("GU", "GV", "GW", "GX") ] = "2006-2010" # Sept. 2006: 06/7, 07/8, 08/9, 09/0
+m$legislature[ m$legislature %in% c("GY", "GZ", "H0", "H1") ] = "2010-2014" # Sept. 2010: 10/1, 11/2, 12/3, 13/4
 
 r = unlist(strsplit(m$authors, ";"))
 cat("Found", nrow(m), "bills",
@@ -131,10 +134,10 @@ if(length(r)) {
     
     if(!"try-error" %in% class(h)) {
       
+      name = paste(xpathSApply(h, "//tilltalsnamn", xmlValue), xpathSApply(h, "//efternamn", xmlValue))
       from = min(as.numeric(substr(xpathSApply(h, "//uppdrag[roll_kod='Riksdagsledamot']/from", xmlValue), 1, 4)))
       to = max(as.numeric(substr(xpathSApply(h, "//uppdrag[roll_kod='Riksdagsledamot']/tom", xmlValue), 1, 4)))
       job = xpathSApply(h, "//uppgift[kod='en' and typ='titlar']/uppgift", xmlValue)
-      name = paste(xpathSApply(h, "//tilltalsnamn", xmlValue), xpathSApply(h, "//efternamn", xmlValue))
       
       if(length(name)) {
         
@@ -187,6 +190,8 @@ for(i in unique(s$url)) {
   if(!file.exists(photo) | file.info(photo)$size < 1000) {
     file.remove(photo) # will warn if missing
     s$photo[ s$url == i ] = 0
+  } else {
+    s$photo[ s$url == i ] = 1
   }
 }
 
@@ -216,6 +221,8 @@ s$partyname[ s$party == "FP" ] = "Folkpartiet"
 s$partyname[ s$party == "PP" ] = "Piratpartiet"
 s$partyname[ s$party == "SD" ] = "Sverigedemokraterna"
 s$partyname[ s$party == "IND" ] = "Independent"
+
+table(s$partyname, exclude = NULL)
 
 cat("Found", nrow(s), "MPs", ifelse(nrow(s) > n_distinct(s$name),
                                     "(non-unique names)\n",
@@ -278,8 +285,8 @@ for(l in rev(unique(m$legislature))) {
   n %v% "nyears" = s[ network.vertex.names(n), "nyears" ]
   n %v% "county" = s[ network.vertex.names(n), "county" ]
   n %v% "photo" = s[ network.vertex.names(n), "photo" ]
-  n %v% "coalition" = ifelse(n %v% "party" %in% c("S", "V", "MP"), "Leftwing", # Rödgröna
-                             ifelse(n %v% "party" == "SD", NA, "Rightwing"))   # Alliansen
+  n %v% "coalition" = ifelse(n %v% "party" %in% c("S", "V", "MP"), "Rödgröna", # Leftwing
+                             ifelse(n %v% "party" == "SD", NA, "Alliansen"))   # Rightwing
   
   network::set.edge.attribute(n, "source", as.character(edges[, 1]))
   network::set.edge.attribute(n, "target", as.character(edges[, 2]))
@@ -349,8 +356,9 @@ for(l in rev(unique(m$legislature))) {
   print(table(n %v% "party", exclude = NULL))
   
   # number of bills cosponsored
+  nb = unlist(strsplit(data$authors, ";"))
   nb = sapply(n %v% "url", function(x) {
-    nrow(subset(data, grepl(x, authors))) # ids are unique numbers
+    sum(nb == x) # ids are unique numbers
   })
   n %v% "n_bills" = as.vector(nb)
   
@@ -369,8 +377,11 @@ for(l in rev(unique(m$legislature))) {
     
     print(g)
     
-    ggsave(paste0("plots/net_se", l, ".pdf"), g, width = 12, height = 9)
-    ggsave(paste0("plots/net_se", l, ".jpg"), g + theme(legend.position = "none"),
+    ggsave(paste0("plots/net_se", l, ".pdf"),
+           g + theme(legend.key = element_blank()),
+           width = 12, height = 9)
+    ggsave(paste0("plots/net_se", l, ".jpg"),
+           g + theme(legend.position = "none"),
            width = 12, height = 12, dpi = 72)
     
   }
