@@ -127,6 +127,9 @@ if(!file.exists("data/ledamoter.csv")) {
   
 }
 
+# empty pages
+r = r[ !r %in% c("0584306280501", "0338066970018", "0844235199717", "0000000000000") ]
+
 if(length(r)) {
   
   cat("Scraping", length(r), "missing sponsor(s)\n")
@@ -383,10 +386,10 @@ for(l in rev(unique(m$legislature))) {
     
     ggsave(paste0("plots/net_se", l, ".pdf"),
            g + theme(legend.key = element_blank()),
-           width = 12, height = 9)
+           width = 10, height = 9)
     ggsave(paste0("plots/net_se", l, ".jpg"),
            g + theme(legend.position = "none"),
-           width = 12, height = 12, dpi = 72)
+           width = 9, height = 9, dpi = 150)
     
   }
   
