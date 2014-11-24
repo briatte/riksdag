@@ -23,17 +23,21 @@ plot = TRUE
 gexf = TRUE
 
 colors = c(
-  "V" = "#E41A1C", # Vänsterpartiet, red
-  "MP" = "#4DAF4A", # Miljöpartiet, green
-  "PP" = "#984EA3", # Piratpartiet, purple
-  "S" = "#F781BF", # Socialdemokraterna, pink
-  "C" = "#A65628", # Centerpartiet, agrarian, brown
-  "M" = "#FF7F00", # Moderaterna, orange
-  "KD" = "#377EB8", # Kristdemokraterna, blue
-  "NYD" = "#FFFF33", # Ny Demokrati, yellow
-  "FP" = "#80B1D3", # Folkpartiet, light blue (light orange: #FDB462)
-  "SD" = "#444444", # Sverigedemokraterna, far-right, dark grey
-  "IND" = "#AAAAAA" # unaffiliated (William Petzäll), light grey
+  # Left
+  "PP"  = "#984EA3", # Piratpartiet        -- purple (not used, EP only)
+  "V"   = "#E41A1C", # Vänsterpartiet      -- red
+  "MP"  = "#B3DE69", # Miljöpartiet        -- light green
+  "S"   = "#F781BF", # Socialdemokraterna  -- pink
+  # Centre
+  "C"   = "#4DAF4A", # Centerpartiet       -- green
+  "FP"  = "#FF7F00", # Folkpartiet         -- orange
+  "KD"  = "#377EB8", # Kristdemokraterna   -- blue
+  # Right
+  "M"   = "#80B1D3", # Moderaterna         -- light blue
+  "NYD" = "#FFFF33", # Ny Demokrati        -- yellow (1991-1994, no overlap with SD)
+  "SD"  = "#FFFF33", # Sverigedemokraterna -- yellow (2010-2014, no overlap with NYD)
+  # Other
+  "IND" = "#AAAAAA" # unaffiliated (William Petzäll) -- light grey
 )
 order = names(colors)
 
