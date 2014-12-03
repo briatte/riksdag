@@ -249,7 +249,8 @@ for(l in rev(unique(m$legislature))) {
     w = unlist(strsplit(i, ";"))
     
     d = s[ w, "uid" ]
-    d = subset(expand.grid(d, d), Var1 != Var2)
+    d = subset(expand.grid(Var1 = d[1], Var2 = d[-1], stringsAsFactors = FALSE), Var1 != Var2)
+    #d = subset(expand.grid(d, d), Var1 != Var2)
     d = unique(apply(d, 1, function(x) paste0(sort(x), collapse = "_")))
 
     if(length(d))
