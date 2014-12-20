@@ -229,7 +229,7 @@ s$name[ s$url == "0160374603998" ] = "Sten Andersson-1"
 s$name[ s$url == "0892012091809" ] = "Sten Andersson-2"
 
 # duplicates solved
-stopifnot(nrow(s) == length(unique(s$name)))
+stopifnot(nrow(s) == n_distinct(s$name))
 cat("Found", nrow(s), "MPs\n")
 
 s$uid = paste(s$name, gsub("\\D", "", s$url))
