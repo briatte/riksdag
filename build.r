@@ -162,8 +162,8 @@ for(l in rev(unique(m$legislature))) {
   
   # clean up vertex names from uid number
   network.vertex.names(n) = gsub("\\s\\d+", "", network.vertex.names(n))
-  n %e% "source" = gsub("\\s\\d+", "", n %e% "source")
-  n %e% "target" = gsub("\\s\\d+", "", n %e% "target")
+  set.edge.attribute(n, "source", gsub("\\s\\d+", "", n %e% "source"))
+  set.edge.attribute(n, "target", gsub("\\s\\d+", "", n %e% "target"))
   
   assign(paste0("net_se", substr(l, 1, 4)), n)
   assign(paste0("bills_se", substr(l, 1, 4)), data)
