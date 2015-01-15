@@ -9,13 +9,13 @@ for(l in rev(unique(m$legislature))) {
   rownames(s) = gsub("\\D", "", s$url)
   
   # check for missing sponsors
-  # u = unlist(strsplit(data$authors, ";"))
-  # u = na.omit(u[ !u %in% gsub("\\D", "", s$url) ])
-  # if(length(u)) {
-  #   u = table(u)
-  #   cat("Missing", length(u), "sponsors", sum(u), "mentions:\n")
-  #   print(u)
-  # }
+  u = unlist(strsplit(data$authors, ";"))
+  u = na.omit(u[ !u %in% gsub("\\D", "", s$url) ])
+  if(length(u)) {
+    u = table(u)
+    cat("Missing", length(u), "sponsors", sum(u), "mentions:\n")
+    print(u)
+  }
     
   #
   # directed edge list
@@ -116,11 +116,10 @@ for(l in rev(unique(m$legislature))) {
     sum(unlist(strsplit(x, ";")) < substr(l, 1, 4))
   })
   n %v% "nyears" = as.numeric(s[ network.vertex.names(n), "nyears" ])
-  n %v% "constituency" = as.character(s[ network.vertex.names(n), "county" ])
+  n %v% "constituency" = as.character(s[ network.vertex.names(n), "constituency" ]) # exact
+  n %v% "county" = as.character(s[ network.vertex.names(n), "county" ]) # Wikipedia English, simplified
   n %v% "photo" = as.character(s[ network.vertex.names(n), "photo" ])
   
-  print(table(n %v% "nyears"))
-
   set.edge.attribute(n, "source", as.character(edges[, 1])) # cosponsor
   set.edge.attribute(n, "target", as.character(edges[, 2])) # first author
   
@@ -174,7 +173,7 @@ for(l in rev(unique(m$legislature))) {
   #
   
   if(gexf)
-    get_gexf(paste0("net_se", l), n, meta, mode, colors, extra = "constituency")
+    get_gexf(paste0("net_se", l), n, meta, mode, colors, extra = "county")
 
 }
 

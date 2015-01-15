@@ -132,7 +132,7 @@ if(length(r)) {
                                 county = xpathSApply(h, "//valkrets", xmlValue),
                                 status = xpathSApply(h, "//status[1]", xmlValue),
                                 mandate = mdts,
-                                job = ifelse(is.null(job), NA, job),
+                                job = ifelse(is.null(job) | job == "", NA, job),
                                 url = paste0("http://data.riksdagen.se/personlista/?iid=", i, "&utformat=html"),
                                 photo = xpathSApply(h, "//bild_url_80", xmlValue),
                                 stringsAsFactors = FALSE))
@@ -175,29 +175,40 @@ for(i in unique(s$url)) {
 
 s$sex = ifelse(s$sex == "kvinna", "F", "M")
 
+# convert constituencies to Wikipedia English handles
+
+# note: constituency is very often missing in legislatures before 1994 due
+# to a revision in the national apportionment of fixed constituency seats
+
 s$county = gsub("( )?, plats |(s)? (kommun|län)|\\d", "", s$county)
-s$county = gsub("s norra och östra", " North+East", s$county) # Skånes
+s$county = gsub("s norra och östra", " North_East", s$county) # Skånes
 s$county = gsub("s norra", " North", s$county) # Västra Götaland
 s$county = gsub("s östra", " East", s$county)
 s$county = gsub("s södra", " South", s$county)
 s$county = gsub("s västra", " West", s$county)
-s$county = paste(s$county, "County")
-s$county[ s$county == " County" ] = NA
+s$county = ifelse(s$county == "", NA, paste(s$county, "County"))
+s$county = gsub("\\s", "_", s$county)
 
-s$party[ s$party %in% c("", "-") ] = "IND"
+# version used in the networks
+s$constituency = s$county
 
-s$partyname = NA
-s$partyname[ s$party == "V" ] = "Vänsterpartiet"
-s$partyname[ s$party == "MP" ] = "Miljöpartiet"
-s$partyname[ s$party == "S" ] = "Socialdemokraterna"
-s$partyname[ s$party == "C" ] = "Centerpartiet"
-s$partyname[ s$party == "M" ] = "Moderaterna"
-s$partyname[ s$party == "NYD" ] = "Ny Demokrati"
-s$partyname[ s$party == "KD" ] = "Kristdemokraterna"
-s$partyname[ s$party == "FP" ] = "Folkpartiet"
-s$partyname[ s$party == "PP" ] = "Piratpartiet"
-s$partyname[ s$party == "SD" ] = "Sverigedemokraterna"
-s$partyname[ s$party == "IND" ] = "Independent"
+# version used in the GEXF exports (compatible with Wikipedia English)
+s$county = gsub("_(North|East|South|West|North_East)", "", s$county)
+s$county[ s$county == "Göteborg_County" ] = "Gothenburg"
+s$county[ s$county == "Malmö_County" ] = "Malmö"
+
+s$party[ s$party == "-" ] = "IND"
+s$partyname = c("V" = "Vänsterpartiet",
+                "MP" = "Miljöpartiet",
+                "S" = "Socialdemokraterna",
+                "C" = "Centerpartiet",
+                "M" = "Moderaterna",
+                "NYD" = "Ny Demokrati",
+                "KD" = "Kristdemokraterna",
+                "FP" = "Folkpartiet",
+                "PP" = "Piratpartiet",
+                "SD" = "Sverigedemokraterna",
+                "IND" = "Independent")[ s$party ] # none missing
 
 table(s$partyname, exclude = NULL)
 

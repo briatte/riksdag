@@ -35,10 +35,12 @@ The sponsors data are read from the XML listings available on the Riksdag's open
 - `sex` -- gender (F/M), read from the profile
 - `party` -- political party, abbreviated
 - `partyname` -- political party, full name
-- `constituency` -- constituency (sometimes empty)
+- `constituency` -- constituency, stored as the string to its Wikipedia English entry (see note)
 - `status` -- last parliamentary status
 - `mandate` -- semicolon-separated mandate years, used to compute the `nyears` seniority variable
 - `job` -- occupation
 - `url` -- profile URL, shortened to unique numeric identifier
 - `photo` -- photo URL, coded as a numeric dummy (0/1); photo URLs are based on profile URLs
 - `uid` -- sponsor unique identifier, composed of `name` and `url`
+
+Note -- missing constituencies are due to a reform of the constituency system, which merged several constituencies into single ones.
