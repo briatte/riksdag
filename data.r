@@ -197,22 +197,6 @@ s$county = gsub("_(North|East|South|West|North_East)", "", s$county)
 s$county[ s$county == "Göteborg_County" ] = "Gothenburg"
 s$county[ s$county == "Malmö_County" ] = "Malmö"
 
-# check Wikipedia entries
-for(i in na.omit(unique(s$county))) {
-  
-  g = GET(paste0("https://en.wikipedia.org/wiki/", i))
-  
-  if(status_code(g) != 200)
-    cat("Missing Wikipedia entry:", i, "\n")
-  
-  g = xpathSApply(htmlParse(g), "//title", xmlValue)
-  g = gsub("(.*) - Wikipedia(.*)", "\\1", g)
-  
-  if(gsub("\\s", "_", g) != i)
-    cat("Discrepancy:", g, i ,"\n")
-  
-}
-
 s$party[ s$party == "-" ] = "IND"
 s$partyname = c("V" = "Vänsterpartiet",
                 "MP" = "Miljöpartiet",
