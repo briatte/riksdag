@@ -43,4 +43,4 @@ The sponsors data are read from the XML listings available on the Riksdag's open
 - `photo` -- photo URL, coded as a numeric dummy (0/1); photo URLs are based on profile URLs
 - `uid` -- sponsor unique identifier, composed of `name` and `url`
 
-Note -- missing constituencies are due to a reform of the constituency system, which merged several constituencies into single ones.
+Note -- missing constituencies are due to a reform of the constituency system, which merged several constituencies into single ones. There are lots of missing constituencies for the legislatures before 2002, 4% (_n_ = 18 constituencies) missing in 2002-2006, and none afterwards.
