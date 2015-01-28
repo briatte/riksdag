@@ -177,7 +177,8 @@ for(l in rev(unique(m$legislature))) {
 
 }
 
-save(list = ls(pattern = "^(net|edges|bills)_se\\d{4}$"), file = "data/net_se.rda")
+save(list = ls(pattern = "^(net|edges|bills)_se\\d{4}$"),
+     file = "data/net_se.rda")
 
 if(gexf)
   zip("net_se.zip", dir(pattern = "^net_se\\d{4}-\\d{4}\\.gexf$"))
