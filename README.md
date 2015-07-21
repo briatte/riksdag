@@ -1,7 +1,8 @@
 This repository contains code to build cosponsorship networks from bills (and motions) passed in the [Swedish Parliament](http://www.riksdagen.se/).
 
-- [interactive demo](http://briatte.org/riksdag)
-- [static plots](http://briatte.org/riksdag/plots.html)
+- [interactive demo](http://f.briatte.org/parlviz/riksdag)
+- [static plots](http://f.briatte.org/parlviz/riksdag/plots.html)
+- [more countries](https://github.com/briatte/parlnet)
 
 The data come from the Riksdag's [open data portal](http://data.riksdagen.se/).
 
