@@ -19,4 +19,4 @@ library(grid)
 
 # extras
 
-library(jsonlite) # to parse JSON data
+library(jsonlite) # parse JSON data
