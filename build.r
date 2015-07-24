@@ -16,7 +16,7 @@ for(l in rev(unique(m$legislature))) {
     cat("Missing", length(u), "sponsors", sum(u), "mentions:\n")
     print(u)
   }
-    
+  
   #
   # directed edge list
   #
@@ -25,7 +25,7 @@ for(l in rev(unique(m$legislature))) {
     
     w = unlist(strsplit(i, ";"))
     
-    d = s[ w, "uid" ]
+    d = unique(s[ w, "uid" ])
     d = expand.grid(i = d, j = d[ 1 ], stringsAsFactors = FALSE)
     
     return(data.frame(d, w = length(w) - 1)) # number of cosponsors
@@ -67,19 +67,13 @@ for(l in rev(unique(m$legislature))) {
   edges = merge(edges, aggregate(w ~ j, function(x) sum(1 / x), data = self))
   edges$gsw = edges$nfw / edges$w
   
+  # sanity check
+  stopifnot(edges$gsw <= 1)
+  
   # final edge set: cosponsor, first author, weights
-  edges = edges[, c("i", "j", "raw", "nfw", "gsw") ]
+  edges = select(edges, i, j, raw, nfw, gsw)
   
   cat(nrow(edges), "edges, ")
-  
-  # small bug affecting 9 edge in 1998-2002
-  # caused by special character in sponsor name (Carl-Erik Skårman)
-  if(any(edges$gsw > 1)) {
-    
-    cat("dropped", length(edges$gsw[ edges$gsw > 1 ]), "with gsw > 1, ")
-    edges = subset(edges, gsw <= 1)
-    
-  }
   
   #
   # directed network
@@ -103,7 +97,7 @@ for(l in rev(unique(m$legislature))) {
   n %v% "n_bills" = n %v% "n_au" + n %v% "n_co"
   
   cat(network.size(n), "nodes\n")
-
+  
   rownames(s) = s$uid
   
   n %v% "url" = as.character(s[ network.vertex.names(n), "url" ])
@@ -120,6 +114,11 @@ for(l in rev(unique(m$legislature))) {
   n %v% "county" = as.character(s[ network.vertex.names(n), "county" ]) # Wikipedia English, simplified
   n %v% "photo" = as.character(s[ network.vertex.names(n), "photo" ])
   
+  # unweighted degree
+  n %v% "degree" = degree(n)
+  q = n %v% "degree"
+  q = as.numeric(cut(q, unique(quantile(q)), include.lowest = TRUE))
+  
   set.edge.attribute(n, "source", as.character(edges[, 1])) # cosponsor
   set.edge.attribute(n, "target", as.character(edges[, 2])) # first author
   
@@ -128,30 +127,15 @@ for(l in rev(unique(m$legislature))) {
   set.edge.attribute(n, "gsw", edges$gsw) # Gross-Shalizi weights
   
   #
-  # weighted measures
-  #
-  
-  n = get_modularity(n, weights = "raw")
-  n = get_modularity(n, weights = "nfw")
-  n = get_modularity(n, weights = "gsw")
-  
-  n = get_centrality(n, weights = "raw")
-  n = get_centrality(n, weights = "nfw")
-  n = get_centrality(n, weights = "gsw")
-  
-  #
   # network plot
   #
-    
+  
   if(plot) {
     
-    q = n %v% "degree"
-    q = as.numeric(cut(q, unique(quantile(q)), include.lowest = TRUE))
-    
-    ggnet_save(n, file = paste0("plots/net_se"),
-               i = colors[ s[ n %e% "source", "party" ] ],
-               j = colors[ s[ n %e% "target", "party" ] ],
-               q, colors, order)
+    save_plot(n, file = paste0("plots/net_se"),
+              i = colors[ s[ n %e% "source", "party" ] ],
+              j = colors[ s[ n %e% "target", "party" ] ],
+              q, colors, order)
     
   }
   
@@ -173,8 +157,8 @@ for(l in rev(unique(m$legislature))) {
   #
   
   if(gexf)
-    get_gexf(paste0("net_se", l), n, meta, mode, colors, extra = "county")
-
+    save_gexf(paste0("net_se", l), n, meta, mode, colors, extra = "county")
+  
 }
 
 save(list = ls(pattern = "^(net|edges|bills)_se\\d{4}$"),
