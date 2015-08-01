@@ -104,7 +104,7 @@ for(l in rev(unique(m$legislature))) {
   n %v% "sex" = as.character(s[ network.vertex.names(n), "sex" ])
   n %v% "born" = as.numeric(s[ network.vertex.names(n), "born" ])
   n %v% "party" = as.character(s[ network.vertex.names(n), "party" ])
-  n %v% "partyname" = as.character(s[ network.vertex.names(n), "partyname" ])
+  n %v% "partyname" = as.character(groups[ n %v% "party" ])
   n %v% "lr" = as.numeric(scores[ n %v% "party" ])
   s$nyears = sapply(s$mandate, function(x) {
     sum(unlist(strsplit(x, ";")) < substr(l, 1, 4))
@@ -132,7 +132,7 @@ for(l in rev(unique(m$legislature))) {
   
   if(plot) {
     
-    save_plot(n, file = paste0("plots/net_se"),
+    save_plot(n, file = paste0("plots/net_se", l),
               i = colors[ s[ n %e% "source", "party" ] ],
               j = colors[ s[ n %e% "target", "party" ] ],
               q, colors, order)

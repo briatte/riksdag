@@ -9,7 +9,7 @@ source("parties.r")
 dir.create("data"   , showWarnings = FALSE)
 dir.create("photos" , showWarnings = FALSE)
 dir.create("plots"  , showWarnings = FALSE)
-dir.create("raw"    , showWarnings = FALSE) # delete when done (large, 1.5GB)
+dir.create("raw"    , showWarnings = FALSE)
 
 # parameters
 

@@ -32,7 +32,7 @@ if(!file.exists(file)) {
     }
     
     cat("done, ", sprintf("%6.0f", nrow(m)), "total bills\n")
-    file.remove(f)
+    file.remove(f) # save disk space (1.5+ GB files in total)
     
   }
   
