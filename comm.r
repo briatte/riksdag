@@ -27,7 +27,7 @@ raw$y[ as.Date(raw$d) >= as.Date("1998-09-20") ] = "1998"
 raw$y[ as.Date(raw$d) >= as.Date("2002-09-15") ] = "2002"
 raw$y[ as.Date(raw$d) >= as.Date("2006-09-17") ] = "2006"
 raw$y[ as.Date(raw$d) >= as.Date("2010-09-19") ] = "2010"
-# raw$y[ as.Date(raw$d) >= as.Date("2014-09-14") ] = "2014"
+raw$y[ as.Date(raw$d) >= as.Date("2014-09-14") ] = "2014"
 
 raw$i = gsub("\\D", "", raw$i)
 raw = raw[ !is.na(raw$y), c("i", "y", "n") ]

@@ -13,6 +13,18 @@ colors = c(
   "IND" = "#AAAAAA"  # unaffiliated (William Petzäll) -- light grey
 )
 
+groups = c("V" = "Vänsterpartiet",
+           "MP" = "Miljöpartiet",
+           "S" = "Socialdemokraterna",
+           "C" = "Centerpartiet",
+           "M" = "Moderaterna",
+           "NYD" = "Ny Demokrati",
+           "KD" = "Kristdemokraterna",
+           "FP" = "Folkpartiet",
+           "PP" = "Piratpartiet",
+           "SD" = "Sverigedemokraterna",
+           "IND" = "independent")
+
 # ParlGov Left/Right scores
 
 scores = c(
