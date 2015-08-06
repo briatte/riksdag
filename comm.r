@@ -51,7 +51,7 @@ for (i in colnames(comm)[ -1 ])
 stopifnot(gsub("\\D", "", s$url) %in% names(comm[, -1]))
 
 # assign co-memberships to networks
-for (i in ls(pattern = "^net_")) {
+for (i in ls(pattern = "^net_se")) {
   
   n = get(i)
   cat(i, ":", network.size(n), "nodes")
