@@ -1,7 +1,7 @@
 # MP bills (slow, over 100,000 JSON files to parse)
 
 file = "data/motioner.csv"
-if(!file.exists(file)) {
+if (!file.exists(file)) {
   
   m = data_frame()
   years = c("2014-2017", "2010-2013", "2006-2009", "2002-2005", "1998-2001", "1990-1997", "1980-1989")
@@ -68,7 +68,7 @@ cat("Found", nrow(m), "bills",
 
 # sponsors
 
-if(!file.exists("data/ledamoter.csv")) {
+if (!file.exists("data/ledamoter.csv")) {
   
   s = data_frame() # initialize
   
@@ -84,20 +84,20 @@ if(!file.exists("data/ledamoter.csv")) {
 # empty pages
 r = unique(r[ !r %in% c("0584306280501", "0338066970018", "0844235199717", "0000000000000") ])
 
-if(length(r)) {
+if (length(r)) {
   
   cat("Scraping", length(r), "missing sponsor(s)\n")
   
-  for(i in rev(r)) {
+  for (i in rev(r)) {
     
     cat(sprintf("%4.0f", which(r == i)), str_pad(i, 14, "right"))
     
     file = paste0("raw/mp-", i, ".xml")
-    if(!file.exists(file))
+    if (!file.exists(file))
       try(download.file(paste0("http://data.riksdagen.se/personlista/?iid=", i),
                         file, quiet = TRUE, mode = "wb"), silent = TRUE)
     
-    if(!file.info(file)$size) {
+    if (!file.info(file)$size) {
       
       cat(": failed\n")
       file.remove(file)
@@ -119,7 +119,7 @@ if(length(r)) {
 
       job = xpathSApply(h, "//uppgift[kod='en' and typ='titlar']/uppgift", xmlValue)
       
-      if(length(name)) {
+      if (length(name)) {
         
         s = rbind(s, data_frame(
           name,
@@ -156,45 +156,101 @@ s = read.csv("data/ledamoter.csv", stringsAsFactors = FALSE)
 
 s$url = gsub("\\D", "", s$url)
 
-# download photos
-for(i in unique(s$url)) {
+# download photos (eliminating known fails for speed)
+for (i in unique(s$url[ !s$url %in% c("0316531680905", "0957300271615", "0685433188501", "0623459368604", 
+                                     "0707426886411", "0261479148307", "0778776381700", "0898090064906", 
+                                     "0308563888104", "0255522895108", "0362315104401", "0918472842401", 
+                                     "0968100864203", "0161742347007", "0675602051200", "0908744384705", 
+                                     "0740062037201", "0836242026100", "0316358669112", "0934740593109", 
+                                     "0844198084908", "094134653807", "0209004049600", "0931691314703", 
+                                     "049679140507", "076794009304", "0320679739714", "0648066719018", 
+                                     "078688254917", "0122743258808", "0809421239311", "0125847791412", 
+                                     "0671453355104", "042327212304", "0887553712102", "0204145974808", 
+                                     "0713431429202", "0208480761018", "0905188835300", "0160374603998", 
+                                     "0778276090510", "0504312377900", "0991145731807", "0647201845206", 
+                                     "0637482737005", "0474619812103", "0817420987900", "0970500642209", 
+                                     "0839411947603", "0800081986104", "0704703749401", "0688288022003", 
+                                     "0713869819004", "0720445004501", "0805469037201", "0725936371809", 
+                                     "0503986647505", "036360942301", "0112898942202", "017025148404", 
+                                     "085018966209", "075784887694", "043283522692", "0117814135893", 
+                                     "0369065037402", "0736538502404", "0252645348808", "0906916983202", 
+                                     "0969147846718", "0729734540102", "0319345085107", "0447050635303", 
+                                     "0791916121004", "0608089286702", "0304188758405", "0552300917200", 
+                                     "0465588741605", "0207544889903", "0751528529603", "0602452646106", 
+                                     "046137638006", "0156214148697", "0493166969401", "0590096877813", 
+                                     "0173299755202", "0179597134903", "0490704966896", "0108961111006", 
+                                     "0823175828602", "0456298137719", "0853269477202", "0455312624903", 
+                                     "0525247903009", "0404836900409", "0469915585804", "0543481046604", 
+                                     "0439547246805", "0882262949208", "0554072553108", "0822327872306", 
+                                     "0943925396910", "0913695315308", "0200943027702", "0744066990009", 
+                                     "0188510214005", "0370147780007", "0167049231801", "0658618520605", 
+                                     "0992508932009", "0126076270500", "0326516425507", "034408872004", 
+                                     "0430662617406", "0442579593600", "0433320766008", "0870568167702", 
+                                     "038177988704", "0976559189807", "0252987797901", "0123485846301", 
+                                     "0314386385815", "0396368639900", "0196459185206", "0925516323103", 
+                                     "0234578153505", "0740487617408", "0890087624410", "0746759738009", 
+                                     "0157778896604", "0686532742102", "0987605799006", "0609514779691", 
+                                     "0758610200105", "051635760208", "0320093489709", "0807888102003", 
+                                     "0307955518208", "021208424208", "0126791491904", "0630022377501", 
+                                     "0583060288605", "0119158487501", "0555321980101", "0401511670506", 
+                                     "0402521607405", "0565457468009", "0477654100492", "0361346660811", 
+                                     "0558681738602", "0424419397804", "0773185460005", "0194731575606", 
+                                     "0243998374609", "0514532571208", "0691717205205", "0362377089307", 
+                                     "047696971609") ])) {
+  
   photo = paste0("photos/", i, ".jpg")
-  if(!file.exists(photo)) {
+  
+  if (!file.exists(photo)) {
+    
     try(download.file(paste0("http://data.riksdagen.se/filarkiv/bilder/ledamot/", i, "_80.jpg"),
                       photo, mode = "wb", quiet = TRUE), silent = TRUE)
+    
   }
+  
   # empty photos are 791 bytes
-  if(!file.exists(photo) | file.info(photo)$size < 1000) {
+  if (!file.exists(photo) | file.info(photo)$size < 1000) {
+    
     file.remove(photo) # will warn if missing
-    s$photo[ s$url == i ] = 0
+    s$photo[ s$url == i ] = NA
+    
   } else {
-    s$photo[ s$url == i ] = 1
+    
+    s$photo[ s$url == i ] = photo
+    
   }
+  
 }
 
+s$photo[ !grepl("photos/", s$photo) ] = NA # exception URLs to missing
 s$sex = ifelse(s$sex == "kvinna", "F", "M")
 
-# convert constituencies to Wikipedia English handles
+# ==============================================================================
+# CHECK CONSTITUENCIES
+# ==============================================================================
 
 # note: constituency is very often missing in legislatures before 1994 due
 # to a revision in the national apportionment of fixed constituency seats
-
-s$county = gsub("( )?, plats |(s)? (kommun|län)|\\d", "", s$county)
-s$county = gsub("s norra och östra", " North_East", s$county) # Skånes
-s$county = gsub("s norra", " North", s$county) # Västra Götaland
-s$county = gsub("s östra", " East", s$county)
-s$county = gsub("s södra", " South", s$county)
-s$county = gsub("s västra", " West", s$county)
-s$county = ifelse(s$county == "", NA, paste(s$county, "County"))
+s$county = ifelse(s$county == "", NA, s$county)
+s$county[ grepl("Götalands", s$county) ] = paste(s$county[ grepl("Götalands", s$county) ], "valkrets")
+s$county[ grepl("Skåne", s$county) ] = paste(s$county[ grepl("Skåne", s$county) ], "valkrets")
 s$county = gsub("\\s", "_", s$county)
+table(s$county, exclude = NULL)
 
-# version used in the networks
-s$constituency = s$county
-
-# version used in the GEXF exports (compatible with Wikipedia English)
-s$county = gsub("_(North|East|South|West|North_East)", "", s$county)
-s$county[ s$county == "Göteborg_County" ] = "Gothenburg"
-s$county[ s$county == "Malmö_County" ] = "Malmö"
+cat("Checking constituencies,", sum(is.na(s$county)), "missing...\n")
+for (i in na.omit(unique(s$county))) {
+  
+  g = GET(paste0("https://sv.wikipedia.org/wiki/", i))
+  
+  if (status_code(g) != 200)
+    cat("Missing Wikipedia entry:", i, "\n")
+  
+  g = xpathSApply(htmlParse(g), "//title", xmlValue)
+  g = gsub("(.*) – Wikipedia(.*)", "\\1", g)
+  
+  if (gsub("\\s", "_", g) != i)
+    cat("Discrepancy:", g, "(WP) !=", i ,"(data)\n")
+  
+}
 
 s$party[ s$party == "-" ] = "IND"
 stopifnot(!is.na(groups[ s$party ]))
@@ -215,3 +271,28 @@ cat("Found", nrow(s), "MPs\n")
 stopifnot(!duplicated(s$url))
 s$uid = paste(s$name, gsub("\\D", "", s$url))
 s = data.frame(s)
+
+s$url = paste0("http://data.riksdagen.se/personlista/?iid=", s$url)
+
+# ============================================================================
+# QUALITY CONTROL
+# ============================================================================
+
+# - might be missing: born (int of length 4), constituency (chr),
+#   photo (chr, folder/file.ext)
+# - never missing: sex (chr, F/M), nyears (int), url (chr, URL),
+#   party (chr, mapped to colors)
+
+cat("Missing", sum(is.na(s$born)), "years of birth\n")
+stopifnot(is.integer(s$born) & nchar(s$born) == 4 | is.na(s$born))
+
+cat("Missing", sum(is.na(s$county)), "constituencies\n")
+stopifnot(is.character(s$county))
+
+cat("Missing", sum(is.na(s$photo)), "photos\n")
+stopifnot(is.character(s$photo) & grepl("^photos(_\\w{2})?/(.*)\\.\\w{3}", s$photo) | is.na(s$photo))
+
+stopifnot(!is.na(s$sex) & s$sex %in% c("F", "M"))
+# stopifnot(!is.na(s$nyears) & is.integer(s$nyears)) # computed on the fly
+stopifnot(!is.na(s$url) & grepl("^http(s)?://(.*)", s$url))
+stopifnot(s$party %in% names(colors))

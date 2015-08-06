@@ -1,20 +1,19 @@
 # add committee co-memberships
 
-load("data/net_se.rda")
-sponsors = dir("raw", pattern = "xml$", full.names = TRUE)
+sponsors = list.files("raw", pattern = "xml$", full.names = TRUE)
 raw = data.frame()
 
 # extract committees from XML files
 # full list: http://data.riksdagen.se/sv/koder/?typ=organ&utformat=html
 
-for(i in sponsors) {
+for (i in sponsors) {
   
   h = xmlParse(i)
   n = xpathSApply(h, "//uppgift[contains(text(), 'kottet')]", xmlValue)
   d = xpathSApply(h, "//uppgift[contains(text(), 'kottet')]/../from", xmlValue)
   
-  if(length(n))
-    raw = rbind(raw, data.frame(i, d, n, stringsAsFactors = FALSE))
+  if (length(n))
+    raw = rbind(raw, data_frame(i, d, n))
   
 }
 
@@ -34,31 +33,31 @@ raw = raw[ !is.na(raw$y), c("i", "y", "n") ]
 
 write.csv(group_by(raw[, -1 ], y, n) %>% 
             arrange(y, n) %>% 
-            mutate(members= n()) %>%
+            mutate(members = n()) %>%
             unique, "data/committees.csv", row.names = FALSE)
 
 # unique legislature-committee pairings
 raw$u = paste(raw$y, raw$n)
 
-comm = data.frame(u = unique(raw$u), stringsAsFactors = FALSE)
+comm = data_frame(u = unique(raw$u))
 
 # add sponsor columns
-for(i in sponsors)
+for (i in sponsors)
   comm[, gsub("raw/mp-|\\.xml", "", i) ] = 0
 
-for(i in colnames(comm)[ -1 ])
+for (i in colnames(comm)[ -1 ])
   comm[ , i ] = as.numeric(comm$u %in% raw$u[ raw$i == i ])
 
-stopifnot(s$url %in% names(comm[, -1]))
+stopifnot(gsub("\\D", "", s$url) %in% names(comm[, -1]))
 
 # assign co-memberships to networks
-for(i in ls(pattern = "^net_")) {
+for (i in ls(pattern = "^net_")) {
   
   n = get(i)
   cat(i, ":", network.size(n), "nodes")
   
   sp = network.vertex.names(n)
-  names(sp) = n %v% "url"
+  names(sp) = gsub("\\D", "", n %v% "url")
   
   stopifnot(names(sp) %in% colnames(comm))
   
@@ -75,12 +74,10 @@ for(i in ls(pattern = "^net_")) {
   colnames(m) = sp[ colnames(m) ]
   rownames(m) = sp[ rownames(m) ]
   
-  e = data.frame(i = n %e% "source",
-                 j = n %e% "target",
-                 stringsAsFactors = FALSE)
+  e = data_frame(i = n %e% "source", j = n %e% "target")
   e$committee = NA
   
-  for(j in 1:nrow(e))
+  for (j in 1:nrow(e))
     e$committee[ j ] = m[ e$i[ j ], e$j[ j ] ]
   
   cat(" co-memberships:",
@@ -102,6 +99,3 @@ for(i in ls(pattern = "^net_")) {
   assign(paste0("co", i), nn)
   
 }
-
-save(list = ls(pattern = "^((co)?net|edges|bills)_se\\d{4}$"),
-     file = "data/net_se.rda")
