@@ -1,7 +1,7 @@
 # add committee co-memberships
 
 sponsors = list.files("raw", pattern = "xml$", full.names = TRUE)
-raw = data.frame()
+raw = data_frame()
 
 # extract committees from XML files
 # full list: http://data.riksdagen.se/sv/koder/?typ=organ&utformat=html
