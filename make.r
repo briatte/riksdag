@@ -9,15 +9,15 @@ source("parties.r")
 dir.create("data"  , showWarnings = FALSE)
 dir.create("plots" , showWarnings = FALSE)
 
-if (file.exists("raw.zip"))
-  unzip("raw.zip")
-
-dir.create("raw"    , showWarnings = FALSE)
-
 if (file.exists("photos.zip"))
   unzip("photos.zip")
 
-dir.create("photos" , showWarnings = FALSE)
+dir.create("photos", showWarnings = FALSE)
+
+if (file.exists("raw.zip"))
+  unzip("raw.zip")
+
+dir.create("raw", showWarnings = FALSE)
 
 # parameters
 
