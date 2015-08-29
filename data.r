@@ -26,12 +26,13 @@ if (!file.exists(file)) {
         uid = d$dokument$hangar_id,
         doc = d$dokument$dok_id,
         date = as.Date(d$dokument$datum),
-        authors = paste0(d$dokintressent$intressent$intressent_id, collapse = ";")
+        authors = paste0(d$dokintressent$intressent$intressent_id %>% unique,
+                         collapse = ";")
       ))
       
     }
     
-    cat("done, ", sprintf("%6.0f", nrow(m)), "total bills\n")
+    cat("", sprintf("%6.0f", nrow(m)), "total bills\n")
     file.remove(f) # save disk space (1.5+ GB files in total)
     
   }
@@ -41,6 +42,7 @@ if (!file.exists(file)) {
 }
 
 m = read.csv(file, stringsAsFactors = FALSE)
+m = filter(m, authors != "")
 m$n_au = 1 + str_count(m$authors, ";")
 
 table(substr(m$doc, 1, 2)) # session years
@@ -263,14 +265,12 @@ s = arrange(s, name, born) %>%
   mutate(n = n(), o = 1:n()) %>%
   group_by() %>%
   mutate(name = ifelse(n == 1, name, paste0(name, "-", o))) %>%
-  select(-n, -o)
-
-stopifnot(!duplicated(s$name))
-cat("Found", nrow(s), "MPs\n")
+  select(-n, -o) %>%
+  data.frame(row.names = gsub("\\D", "", s$url))
 
 stopifnot(!duplicated(s$url))
-s$uid = paste(s$name, gsub("\\D", "", s$url))
-s = data.frame(s)
+stopifnot(!duplicated(s$name))
+cat("Found", nrow(s), "MPs\n")
 
 s$url = paste0("http://data.riksdagen.se/personlista/?iid=", s$url)
 

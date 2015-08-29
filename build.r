@@ -1,46 +1,50 @@
 for (l in unique(m$legislature) %>% sort) {
 
-  data = subset(m, legislature == l & n_au > 1)
+  data = filter(m, legislature == l, n_au > 1)
   cat("Legislature", l, ":", nrow(data), "cosponsored bills, ")
 
-  rownames(s) = gsub("\\D", "", s$url)
-
-  # check for missing sponsors
+  # check for low amount of missing sponsors
   u = unlist(strsplit(data$authors, ";"))
-  u = na.omit(u[ !u %in% gsub("\\D", "", s$url) ])
+  u = u[ !u %in% gsub("\\D", "", s$url) ]
   if (length(u)) {
-    u = table(u)
-    cat("Missing", length(u), "sponsors", sum(u), "mentions:\n")
-    print(u)
+    
+    cat("missing", n_distinct(u), "sponsor(s)", length(u), "mentions, ")
+    
+    # remove bills with null sponsors
+    data$authors = sapply(data$authors, function(x) {
+      x = strsplit(x, ";") %>% unlist
+      paste0(x[ !x %in% u ], collapse = ";")
+    })
+    
   }
+  
+  rownames(s) = gsub("\\D", "", s$url)
 
   # ============================================================================
   # DIRECTED EDGE LIST
   # ============================================================================
 
-  edges = bind_rows(lapply(data$authors, function(i) {
+  edges = lapply(data$authors[ data$authors != "" ], function(i) {
+    
+    w = strsplit(i, ";") %>% unlist
+    return(expand.grid(i = s[ w, "name" ], j = s[ w[1], "name" ],
+                       w = length(w) - 1, # number of cosponsors
+                       stringsAsFactors = FALSE))
 
-    w = unlist(strsplit(i, ";"))
-
-    d = unique(s[ w, "uid" ])
-    d = expand.grid(i = d, j = d[ 1 ], stringsAsFactors = FALSE)
-
-    return(data.frame(d, w = length(w) - 1)) # number of cosponsors
-
-  }))
-
+  }) %>% bind_rows
+  
   # ============================================================================
   # EDGE WEIGHTS
   # ============================================================================
 
   # first author self-loops, with counts of cosponsors
-  self = subset(edges, i == j)
+  self = filter(edges, i == j)
 
   # count number of bills per first author
   n_au = table(self$j)
 
   # remove self-loops from directed edge list
-  edges = subset(edges, i != j)
+  edges = filter(edges, i != j)
 
   # count number of bills cosponsored per sponsor
   n_co = table(edges$i)
@@ -88,7 +92,7 @@ for (l in unique(m$legislature) %>% sort) {
   n %n% "seats" = meta[ "seats" ] %>% as.integer
 
   n %n% "n_cosponsored" = nrow(data)
-  n %n% "n_sponsors" = table(subset(m, legislature == l)$n_au)
+  n %n% "n_sponsors" = table(filter(m, legislature == l)$n_au)
 
   # ============================================================================
   # VERTEX-LEVEL ATTRIBUTES
@@ -105,8 +109,8 @@ for (l in unique(m$legislature) %>% sort) {
 
   cat(network.size(n), "nodes\n")
 
-  rownames(s) = s$uid
-
+  rownames(s) = s$name
+  
   n %v% "url" = s[ network.vertex.names(n), "url" ]
   n %v% "sex" = s[ network.vertex.names(n), "sex" ]
   n %v% "born" = s[ network.vertex.names(n), "born" ]
@@ -143,11 +147,6 @@ for (l in unique(m$legislature) %>% sort) {
   # ============================================================================
   # SAVE OBJECTS
   # ============================================================================
-
-  # clean up vertex names from uid number
-  network.vertex.names(n) = gsub("\\s\\d+", "", network.vertex.names(n))
-  set.edge.attribute(n, "source", gsub("\\s\\d+", "", n %e% "source"))
-  set.edge.attribute(n, "target", gsub("\\s\\d+", "", n %e% "target"))
 
   assign(paste0("net_se", substr(l, 1, 4)), n)
   assign(paste0("bills_se", substr(l, 1, 4)), data)
