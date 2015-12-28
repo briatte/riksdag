@@ -1,6 +1,6 @@
 # add committee co-memberships
 
-sponsors = list.files("raw", pattern = "xml$", full.names = TRUE)
+sponsors = list.files("raw/mp-pages", pattern = "xml$", full.names = TRUE)
 raw = data_frame()
 
 # extract committees from XML files
@@ -43,7 +43,7 @@ comm = data_frame(u = unique(raw$u))
 
 # add sponsor columns
 for (i in sponsors)
-  comm[, gsub("raw/mp-|\\.xml", "", i) ] = 0
+  comm[, gsub("raw/mp-pages/mp-|\\.xml", "", i) ] = 0
 
 for (i in colnames(comm)[ -1 ])
   comm[ , i ] = as.numeric(comm$u %in% raw$u[ raw$i == i ])
